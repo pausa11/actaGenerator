@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.0",
+    "@react-pdf/renderer": "^4.5.1",
     "@tailwindcss/typography": "^0.5.20",
     "next": "^16.2.9",
     "react": "^19.0.0",

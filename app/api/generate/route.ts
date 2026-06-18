@@ -101,29 +101,57 @@ export async function POST(request: NextRequest) {
       { text: PROMPT },
     ];
 
-    const MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash'];
+    // Ordenados de mejor a peor calidad; todos soportan audio via Files API
+    // Solo modelos con cuota disponible en esta cuenta (excluye 0/0 como gemini-2.0-flash)
+    const MODELS = [
+      'gemini-3.5-flash',          // Generación 3.5 — mejor calidad disponible
+      'gemini-3.1-flash-lite',     // Generación 3.1 — estable, 500 RPD (mayor cuota diaria)
+      'gemini-3-flash-preview',    // Generación 3.0
+      'gemini-2.5-flash',          // Generación 2.5 — probado y estable
+      'gemini-2.5-flash-lite',     // Generación 2.5 lite — último recurso
+    ];
+
+    const isRateLimit = (err: unknown) => {
+      const msg = err instanceof Error ? err.message : String(err);
+      return msg.includes('429') || /quota|rate.?limit/i.test(msg);
+    };
+
+    const isOverloaded = (err: unknown) => {
+      const msg = err instanceof Error ? err.message : String(err);
+      return msg.includes('503') || /service.?unavailable|high.?demand|overloaded/i.test(msg);
+    };
+
     let markdown = '';
     let lastError: Error | null = null;
 
     for (const modelName of MODELS) {
+      lastError = null;
       const model = genAI.getGenerativeModel({ model: modelName });
-      for (let attempt = 1; attempt <= 3; attempt++) {
+      const maxAttempts = 2;
+
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         try {
           const result = await model.generateContent(modelParts);
           markdown = result.response.text();
-          lastError = null;
           break;
         } catch (err) {
-          const msg = err instanceof Error ? err.message : '';
-          const is503 = msg.includes('503') || msg.includes('Service Unavailable') || msg.includes('high demand');
-          if (is503 && attempt < 3) {
-            await new Promise(res => setTimeout(res, attempt * 2000));
+          lastError = err instanceof Error ? err : new Error(String(err));
+          if (isRateLimit(err)) {
+            // Cuota agotada → saltar al siguiente modelo de inmediato
+            console.warn(`[${modelName}] Límite de cuota alcanzado, probando siguiente modelo...`);
+            break;
+          }
+          if (isOverloaded(err) && attempt < maxAttempts) {
+            // Sobrecarga temporal → reintentar una vez con delay
+            await new Promise(res => setTimeout(res, attempt * 3000));
             continue;
           }
-          lastError = err instanceof Error ? err : new Error(msg);
+          // Cualquier otro error → saltar al siguiente modelo
+          console.warn(`[${modelName}] Error: ${lastError.message}, probando siguiente modelo...`);
           break;
         }
       }
+
       if (!lastError) break;
     }
 

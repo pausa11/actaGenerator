@@ -79,7 +79,6 @@ export default function Home() {
     URL.revokeObjectURL(url);
   };
 
-  const imprimirPdf = () => window.print();
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-10">
@@ -160,7 +159,7 @@ export default function Home() {
               Descargar .md
             </button>
             <button
-              onClick={imprimirPdf}
+              onClick={() => window.print()}
               className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
             >
               Exportar PDF

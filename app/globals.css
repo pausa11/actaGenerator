@@ -3,6 +3,14 @@
 @tailwind utilities;
 
 @media print {
+  @page {
+    margin: 0;
+  }
+
+  body {
+    padding: 1.8cm 2.2cm;
+  }
+
   .no-print {
     display: none !important;
   }
@@ -13,5 +21,26 @@
 
   body {
     background: white;
+  }
+
+  article {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  /* Evitar que tablas y encabezados queden partidos entre páginas */
+  h1, h2, h3, h4 {
+    break-after: avoid;
+  }
+
+  table {
+    break-inside: avoid;
+  }
+
+  tr {
+    break-inside: avoid;
   }
 }
