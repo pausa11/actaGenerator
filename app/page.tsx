@@ -12,6 +12,9 @@ export default function Home() {
   const [error, setError] = useState('');
   const [archivo, setArchivo] = useState<File | null>(null);
   const [arrastrando, setArrastrando] = useState(false);
+  const [buscar, setBuscar] = useState('');
+  const [reemplazar, setReemplazar] = useState('');
+  const [ultimoReemplazo, setUltimoReemplazo] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const procesarArchivo = (file: File) => {
@@ -67,6 +70,19 @@ export default function Home() {
       setError(err instanceof Error ? err.message : 'Error desconocido');
       setEstado('error');
     }
+  };
+
+  const aplicarCorrecion = () => {
+    if (!buscar.trim()) return;
+    const escapado = buscar.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(escapado, 'g');
+    const coincidencias = (markdown.match(regex) || []).length;
+    if (coincidencias > 0) {
+      setMarkdown(markdown.replace(regex, reemplazar));
+    }
+    setUltimoReemplazo(coincidencias);
+    setBuscar('');
+    setReemplazar('');
   };
 
   const descargarMd = () => {
@@ -151,7 +167,44 @@ export default function Home() {
 
       {estado === 'listo' && markdown && (
         <div>
-          <div className="no-print flex gap-3 mt-10 mb-6">
+          <div className="no-print mt-10 mb-4 p-4 bg-gray-50 border border-gray-200 rounded-xl">
+            <p className="text-sm font-medium text-gray-700 mb-3">Corregir texto transcripto</p>
+            <div className="flex gap-2 items-center flex-wrap">
+              <input
+                type="text"
+                placeholder="Buscar…"
+                value={buscar}
+                onChange={(e) => { setBuscar(e.target.value); setUltimoReemplazo(null); }}
+                onKeyDown={(e) => e.key === 'Enter' && aplicarCorrecion()}
+                className="flex-1 min-w-0 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <span className="text-gray-400 text-sm">→</span>
+              <input
+                type="text"
+                placeholder="Reemplazar por…"
+                value={reemplazar}
+                onChange={(e) => { setReemplazar(e.target.value); setUltimoReemplazo(null); }}
+                onKeyDown={(e) => e.key === 'Enter' && aplicarCorrecion()}
+                className="flex-1 min-w-0 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                onClick={aplicarCorrecion}
+                disabled={!buscar.trim()}
+                className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+              >
+                Reemplazar todo
+              </button>
+            </div>
+            {ultimoReemplazo !== null && (
+              <p className={`text-xs mt-2 ${ultimoReemplazo > 0 ? 'text-green-600' : 'text-amber-600'}`}>
+                {ultimoReemplazo > 0
+                  ? `${ultimoReemplazo} reemplazo${ultimoReemplazo !== 1 ? 's' : ''} realizado${ultimoReemplazo !== 1 ? 's' : ''}.`
+                  : 'No se encontró el texto a buscar.'}
+              </p>
+            )}
+          </div>
+
+          <div className="no-print flex gap-3 mb-6">
             <button
               onClick={descargarMd}
               className="px-4 py-2 bg-gray-800 text-white text-sm font-medium rounded-lg hover:bg-gray-900 transition-colors"
