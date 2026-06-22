@@ -11,7 +11,7 @@ const items = [
     bgColor: '#1e1b4b',
     textColor: '#e9d5ff',
     links: [
-      { label: 'Nueva acta', href: '/', ariaLabel: 'Ir a generar acta' },
+      { label: 'Nueva acta', href: '/generar', ariaLabel: 'Ir a generar acta' },
     ],
   },
   {
@@ -61,12 +61,10 @@ export default function Navbar() {
       items={items}
       baseColor="rgba(255,255,255,0.18)"
       menuColor="#ffffff"
-      {...(sesionActiva && {
-        buttonBgColor: '#7c3aed',
-        buttonTextColor: '#ffffff',
-        buttonLabel: 'Cerrar sesión',
-        onButtonClick: cerrarSesion,
-      })}
+      buttonBgColor={sesionActiva ? '#7c3aed' : undefined}
+      buttonTextColor={sesionActiva ? '#ffffff' : undefined}
+      buttonLabel={sesionActiva ? 'Cerrar sesión' : undefined}
+      onButtonClick={sesionActiva ? cerrarSesion : undefined}
     />
   );
 }

@@ -15,12 +15,14 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" className={cn("font-sans", geist.variable)}>
-      <body className="h-screen overflow-hidden bg-black flex flex-col">
+      <body className="h-screen bg-black flex flex-col">
         <div className="fixed inset-0 -z-10">
           <LightPillarBackground />
         </div>
         <Navbar />
-        {children}
+        <main className="flex-1 overflow-y-auto">
+          {children}
+        </main>
       </body>
     </html>
   );
