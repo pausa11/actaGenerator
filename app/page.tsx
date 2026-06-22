@@ -123,14 +123,14 @@ export default function Home() {
 
 
   return (
-    <div className="max-w-4xl mx-auto px-6 pt-28 pb-10">
+    <div className="max-w-4xl mx-auto px-6 pt-10 pb-10">
       <div className="no-print">
         <p className="mb-8 font-medium text-white">Sube el audio de tu reunión y obtén el acta en segundos.</p>
 
         <div
           className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-colors backdrop-blur-xl ${
             arrastrando
-              ? 'border-blue-400/70 bg-blue-500/20'
+              ? 'border-purple-400/70 bg-purple-500/20'
               : archivo
               ? 'border-green-400/70 bg-green-500/15'
               : 'border-white/40 hover:border-white/60 bg-white/15'
@@ -174,7 +174,7 @@ export default function Home() {
         <button
           onClick={generarActa}
           disabled={!archivo || estado === 'cargando'}
-          className="mt-6 w-full py-3 px-6 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="mt-6 w-full py-3 px-6 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {estado === 'cargando' ? (
             <span className="flex items-center justify-center gap-2">
@@ -201,7 +201,7 @@ export default function Home() {
                 value={buscar}
                 onChange={(e) => { setBuscar(e.target.value); setUltimoReemplazo(null); }}
                 onKeyDown={(e) => e.key === 'Enter' && aplicarCorrecion()}
-                className="flex-1 min-w-0 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 min-w-0 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
               />
               <span className="text-gray-400 text-sm">→</span>
               <input
@@ -210,12 +210,12 @@ export default function Home() {
                 value={reemplazar}
                 onChange={(e) => { setReemplazar(e.target.value); setUltimoReemplazo(null); }}
                 onKeyDown={(e) => e.key === 'Enter' && aplicarCorrecion()}
-                className="flex-1 min-w-0 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 min-w-0 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
               />
               <button
                 onClick={aplicarCorrecion}
                 disabled={!buscar.trim()}
-                className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+                className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
               >
                 Reemplazar todo
               </button>
@@ -239,7 +239,7 @@ export default function Home() {
             <button
               onClick={descargarPDF}
               disabled={descargandoPDF}
-              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {descargandoPDF ? 'Generando PDF…' : 'Exportar PDF'}
             </button>

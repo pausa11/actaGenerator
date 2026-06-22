@@ -158,14 +158,16 @@ const CardNav = ({
             </div>
           )}
 
-          <button
-            type="button"
-            className="card-nav-cta-button"
-            style={{ backgroundColor: buttonBgColor, color: buttonTextColor }}
-            onClick={onButtonClick}
-          >
-            {buttonLabel}
-          </button>
+          {onButtonClick && (
+            <button
+              type="button"
+              className="card-nav-cta-button"
+              style={{ backgroundColor: buttonBgColor, color: buttonTextColor }}
+              onClick={onButtonClick}
+            >
+              {buttonLabel}
+            </button>
+          )}
         </div>
 
         <div className="card-nav-content" aria-hidden={!isExpanded}>
