@@ -1,12 +1,15 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { createClient } from '@/lib/supabase/client';
 
 type Estado = 'idle' | 'cargando' | 'listo' | 'error';
 
 export default function Home() {
+  const router = useRouter();
   const [estado, setEstado] = useState<Estado>('idle');
   const [markdown, setMarkdown] = useState('');
   const [error, setError] = useState('');
@@ -85,6 +88,13 @@ export default function Home() {
     setReemplazar('');
   };
 
+  const cerrarSesion = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push('/auth/login');
+    router.refresh();
+  };
+
   const descargarMd = () => {
     const blob = new Blob([markdown], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
@@ -99,7 +109,15 @@ export default function Home() {
   return (
     <div className="max-w-4xl mx-auto px-6 py-10">
       <div className="no-print">
-        <h1 className="text-3xl font-bold text-gray-900 mb-1">Acta Generator</h1>
+        <div className="flex items-start justify-between mb-1">
+          <h1 className="text-3xl font-bold text-gray-900">Acta Generator</h1>
+          <button
+            onClick={cerrarSesion}
+            className="text-sm text-gray-500 hover:text-gray-800 transition-colors"
+          >
+            Cerrar sesión
+          </button>
+        </div>
         <p className="text-gray-500 mb-8">Sube el audio de tu reunión y obtén el acta en segundos.</p>
 
         <div
