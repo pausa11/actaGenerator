@@ -5,6 +5,7 @@ ARG PRINCE_VERSION=16.2
 
 RUN apt-get update && apt-get install -y \
     wget \
+    ca-certificates \
     libfontconfig1 \
     libfreetype6 \
     --no-install-recommends && \
