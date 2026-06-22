@@ -3,6 +3,7 @@ import './globals.css';
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
 import GrainientBackground from "@/components/GrainientBackground";
+import Navbar from "@/components/Navbar";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -17,6 +18,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen">
         <div className="fixed inset-0 -z-10">
           <GrainientBackground />
+        </div>
+        <div className="relative">
+          <Navbar />
         </div>
         {children}
       </body>
