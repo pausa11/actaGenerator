@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y \
 RUN wget -q "https://www.princexml.com/download/prince-${PRINCE_VERSION}-linux-generic-x86_64.tar.gz" -O prince.tar.gz && \
     tar -xzf prince.tar.gz && \
     cd "prince-${PRINCE_VERSION}-linux-generic-x86_64" && \
-    ./install.sh --prefix=/usr/local && \
+    echo "/usr/local" | ./install.sh && \
     cd .. && rm -rf "prince-${PRINCE_VERSION}-linux-generic-x86_64" prince.tar.gz
 
 WORKDIR /app
