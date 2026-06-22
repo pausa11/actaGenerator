@@ -1,7 +1,5 @@
 import Link from 'next/link';
 import { Mic, Zap, FileDown } from 'lucide-react';
-import fs from 'fs';
-import path from 'path';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -31,9 +29,60 @@ const pasos = [
 
 const formatos = ['MP3', 'M4A', 'WAV', 'OGG', 'WEBM', 'AAC'];
 
+const actaContent = `# Acta de Reunión — Primera Sesión FoodOriginBio
+**Fecha:** viernes 29 de mayo 2026
+**Participantes:** Paula (fundadora / dirección estratégica), Dana (marketing y diseño), Daniel (tecnología / automatización)
+
+---
+
+## 1. Contexto del Negocio
+
+**FoodOriginBio** es un marketplace B2B orientado a la exportación e importación de productos naturales de origen colombiano, con proyección de expansión a Argentina y otros países.
+
+El modelo de negocio consiste en conectar **productores locales** con **empresas extranjeras** que compran en volumen para revender bajo su propia marca.
+
+**Productos iniciales:**
+- Café del Eje Cafetero
+- Harina para waffles libre de gluten a base de plátano
+- Galletería con capacidad de marca blanca
+
+---
+
+## 2. Estado Actual del Marketplace
+
+- Existe una página web en borrador con secciones de exportación e importación.
+- La página **no está conectada** aún a ninguna pasarela de pago ni sistema de cotización automatizado.
+- Se tiene integración pendiente con **Wompi** (pasarela de pagos colombiana).
+
+---
+
+## 3. Proceso de Cotización Actual (Manual — 7 Pasos)
+
+| # | Paso | Descripción |
+|---|------|-------------|
+| 1 | Presentación del cliente | Cantidad requerida, país destino, tipo de producto, requerimientos de marca blanca. |
+| 2 | Búsqueda del proveedor | Disponibilidad, precios, cantidad mínima, tiempo de producción. |
+| 3 | Validación de empaque | Bolsas personalizadas, etiquetas, cajas según el producto. |
+| 4 | Validación logística | Consulta DHL (aéreo y marítimo), restricciones y costos de exportación. |
+| 5 | Consulta de precios | Tarifa logística, validaciones y revisión de precio de gasolina. |
+| 6 | Conciliación de información | Costo de empaque + producto + logística + adicionales. |
+| 7 | Generación de cotización | Precio estimado, tipo de envío, tiempos, cantidad mínima y especificaciones. |
+
+---
+
+## 4. Compromisos y Próximos Pasos
+
+| Responsable | Tarea | Plazo |
+|-------------|-------|-------|
+| **Dana** | Documentar el proceso de cotización manual en Word. | Antes de próxima reunión |
+| **Paula** | Compartir enlace del dominio actual y referencias de plataformas. | Por correo / WhatsApp |
+| **Daniel** | Enviar acta, estudiar proceso documentado e investigar referentes B2B. | Antes de próxima reunión |
+
+---
+
+*Reunión catalogada como productiva por todos los participantes. Próximo encuentro pendiente de confirmar.*`;
+
 export default function Landing() {
-  const actaPath = path.join(process.cwd(), '..', 'foodOriginBio', 'docs', 'actas', 'acta1.md');
-  const actaContent = fs.readFileSync(actaPath, 'utf-8');
 
   return (
     <div className="pb-24">
