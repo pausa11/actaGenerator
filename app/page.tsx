@@ -1,7 +1,10 @@
+'use client';
+
 import Link from 'next/link';
 import { Mic, Zap, FileDown } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import SplitText from '@/components/SplitText';
 
 const pasos = [
   {
@@ -94,13 +97,23 @@ export default function Landing() {
           Impulsado por Gemini AI
         </div>
 
-        <h1 className="text-5xl md:text-7xl font-bold text-white leading-tight max-w-4xl">
-          Pon atención en tu{' '}
+        <h1 className="text-5xl md:text-7xl font-bold text-white leading-tight max-w-4xl text-center">
+          <SplitText
+            text="Pon atención en tu"
+            tag="span"
+            delay={35}
+            textAlign="center"
+          />{' '}
           <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
             reunión.
           </span>
           <br />
-          El acta la generamos nosotros.
+          <SplitText
+            text="El acta la generamos nosotros."
+            tag="span"
+            delay={35}
+            textAlign="center"
+          />
         </h1>
 
         <p className="mt-6 text-xl text-white/60 max-w-2xl">
@@ -120,7 +133,9 @@ export default function Landing() {
 
       {/* ── Cómo funciona ── */}
       <section className="px-6 py-16 max-w-5xl mx-auto">
-        <h2 className="text-3xl font-bold text-white text-center mb-3">Así de simple</h2>
+        <div className="text-center mb-3">
+          <SplitText tag="h2" text="Así de simple" className="text-3xl font-bold text-white" textAlign="center" />
+        </div>
         <p className="text-white/50 text-center mb-12">Tres pasos y tu acta está lista.</p>
 
         <div className="grid md:grid-cols-3 gap-6">
@@ -166,7 +181,9 @@ export default function Landing() {
 
       {/* ── Vista previa del PDF ── */}
       <section className="px-6 py-16 max-w-5xl mx-auto">
-        <h2 className="text-3xl font-bold text-white text-center mb-3">Así queda el acta</h2>
+        <div className="text-center mb-3">
+          <SplitText tag="h2" text="Así queda el acta" className="text-3xl font-bold text-white" textAlign="center" />
+        </div>
         <p className="text-white/50 text-center mb-12">
           Un documento profesional, estructurado y listo para usar.
         </p>
@@ -200,7 +217,7 @@ export default function Landing() {
 
       {/* ── CTA final ── */}
       <section className="px-6 py-20 text-center">
-        <h2 className="text-4xl font-bold text-white mb-4">¿Listo para empezar?</h2>
+        <SplitText tag="h2" text="¿Listo para empezar?" className="text-4xl font-bold text-white mb-4" textAlign="center" />
         <p className="text-white/50 mb-8 text-lg">
           Subí tu próximo audio y obtené el acta en segundos.
         </p>

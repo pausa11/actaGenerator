@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import SplitText from '@/components/SplitText';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -32,7 +33,7 @@ export default function LoginPage() {
   return (
     <div className="flex-1 flex items-start justify-center px-4 pt-32">
       <div className="w-full max-w-sm bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-8 shadow-lg">
-        <h1 className="text-2xl font-bold text-white mb-1">Iniciar sesión</h1>
+        <SplitText tag="h1" text="Iniciar sesión" className="text-2xl font-bold text-white mb-1" />
         <p className="text-sm text-white/60 mb-6">Accede a tu cuenta para generar actas.</p>
 
         <form onSubmit={handleLogin} className="space-y-4">

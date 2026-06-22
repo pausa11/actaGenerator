@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Mail } from 'lucide-react';
+import SplitText from '@/components/SplitText';
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
@@ -37,7 +38,7 @@ export default function RegisterPage() {
       <div className="flex-1 flex items-center justify-center px-4">
         <div className="w-full max-w-sm bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-8 shadow-lg text-center">
           <Mail className="mx-auto mb-3 text-purple-300" size={32} />
-          <h2 className="text-xl font-bold text-white mb-2">Revisa tu correo</h2>
+          <SplitText tag="h2" text="Revisa tu correo" className="text-xl font-bold text-white mb-2" />
           <p className="text-sm text-white/60">
             Te enviamos un enlace de confirmación a <strong className="text-white">{email}</strong>. Haz clic en él para activar tu cuenta.
           </p>
@@ -55,7 +56,7 @@ export default function RegisterPage() {
   return (
     <div className="flex-1 flex items-start justify-center px-4 pt-32">
       <div className="w-full max-w-sm bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-8 shadow-lg">
-        <h1 className="text-2xl font-bold text-white mb-1">Crear cuenta</h1>
+        <SplitText tag="h1" text="Crear cuenta" className="text-2xl font-bold text-white mb-1" />
         <p className="text-sm text-white/60 mb-6">Regístrate para acceder al generador de actas.</p>
 
         <form onSubmit={handleRegister} className="space-y-4">
