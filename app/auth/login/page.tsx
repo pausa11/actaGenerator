@@ -24,7 +24,7 @@ export default function LoginPage() {
       setError('Correo o contraseña incorrectos.');
       setCargando(false);
     } else {
-      router.push('/');
+      router.push('/generar');
       router.refresh();
     }
   };
