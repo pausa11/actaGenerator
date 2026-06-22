@@ -47,7 +47,7 @@ export default function Navbar() {
       logoText="Acta Generator"
       items={items}
       baseColor="rgba(255,255,255,0.18)"
-      menuColor="#0f172a"
+      menuColor="#ffffff"
       buttonBgColor="#2563eb"
       buttonTextColor="#ffffff"
       buttonLabel="Cerrar sesión"

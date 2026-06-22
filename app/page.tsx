@@ -125,7 +125,7 @@ export default function Home() {
   return (
     <div className="max-w-4xl mx-auto px-6 pt-28 pb-10">
       <div className="no-print">
-        <p className="mb-8 font-medium">Sube el audio de tu reunión y obtén el acta en segundos.</p>
+        <p className="mb-8 font-medium text-white">Sube el audio de tu reunión y obtén el acta en segundos.</p>
 
         <div
           className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-colors backdrop-blur-xl ${
@@ -150,17 +150,17 @@ export default function Home() {
 
           {archivo ? (
             <div>
-              <Mic className="mx-auto mb-2 text-gray-600" size={28} />
-              <p className="font-medium text-gray-800">{archivo.name}</p>
-              <p className="text-sm text-gray-500 mt-1">
+              <Mic className="mx-auto mb-2 text-white/70" size={28} />
+              <p className="font-medium text-white">{archivo.name}</p>
+              <p className="text-sm text-white/70 mt-1">
                 {(archivo.size / 1024 / 1024).toFixed(1)} MB — haz clic para cambiar
               </p>
             </div>
           ) : (
             <div>
-              <FolderOpen className="mx-auto mb-2 text-gray-400" size={28} />
-              <p className="text-gray-600 font-medium">Arrastra tu audio aquí</p>
-              <p className="text-sm text-gray-400 mt-1">o haz clic para seleccionar — mp3, m4a, wav, ogg</p>
+              <FolderOpen className="mx-auto mb-2 text-white/70" size={28} />
+              <p className="text-white font-medium">Arrastra tu audio aquí</p>
+              <p className="text-sm text-white/60 mt-1">o haz clic para seleccionar — mp3, m4a, wav, ogg</p>
             </div>
           )}
         </div>
@@ -193,7 +193,7 @@ export default function Home() {
       {estado === 'listo' && markdown && (
         <div>
           <div className="no-print mt-10 mb-4 p-4 bg-white/15 backdrop-blur-xl border border-white/30 rounded-xl">
-            <p className="text-sm font-medium text-gray-700 mb-3">Corregir texto transcripto</p>
+            <p className="text-sm font-medium text-white mb-3">Corregir texto transcripto</p>
             <div className="flex gap-2 items-center flex-wrap">
               <input
                 type="text"
@@ -245,7 +245,7 @@ export default function Home() {
             </button>
           </div>
 
-          <article className="bg-white/20 backdrop-blur-xl rounded-xl border border-white/30 p-10 prose prose-gray max-w-none">
+          <article className="bg-white rounded-xl border border-white/20 p-10 prose prose-gray max-w-none">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>
           </article>
         </div>
