@@ -4,6 +4,7 @@ import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
 import LightPillarBackground from "@/components/LightPillarBackground";
 import Navbar from "@/components/Navbar";
+import LenisProvider from "@/components/LenisProvider";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -20,9 +21,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <LightPillarBackground />
         </div>
         <Navbar />
-        <main className="flex-1 overflow-y-auto">
+        <LenisProvider>
           {children}
-        </main>
+        </LenisProvider>
       </body>
     </html>
   );

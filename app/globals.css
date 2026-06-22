@@ -45,6 +45,30 @@
   }
 }
 
+/* Scrollbar oscuro global */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0d0d14;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3a3a52;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #5a5a7a;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #3a3a52 #0d0d14;
+}
+
 @layer base {
   .theme {
     --font-heading: var(--font-sans);
