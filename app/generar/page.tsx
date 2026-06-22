@@ -17,6 +17,7 @@ export default function Home() {
   const [reemplazar, setReemplazar] = useState('');
   const [ultimoReemplazo, setUltimoReemplazo] = useState<number | null>(null);
   const [descargandoPDF, setDescargandoPDF] = useState(false);
+  const [modeloUsado, setModeloUsado] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
   const procesarArchivo = (file: File) => {
@@ -56,6 +57,7 @@ export default function Home() {
     setEstado('cargando');
     setError('');
     setMarkdown('');
+    setModeloUsado('');
 
     try {
       const form = new FormData();
@@ -67,6 +69,7 @@ export default function Home() {
       if (!res.ok) throw new Error(data.error || 'Error al generar el acta');
 
       setMarkdown(data.markdown);
+      setModeloUsado(data.model ?? '');
       setEstado('listo');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');
@@ -188,6 +191,19 @@ export default function Home() {
             'Generar acta'
           )}
         </button>
+
+        {estado === 'listo' && modeloUsado && (
+          <p className="mt-3 text-xs text-white/50 text-center">
+            Acta generada con <span className="font-mono text-white/70">{modeloUsado}</span>
+          </p>
+        )}
+
+        <div className="mt-4 flex items-start gap-2 p-3 bg-amber-400/10 border border-amber-400/30 rounded-lg">
+          <span className="text-amber-400 text-sm mt-px">⚠</span>
+          <p className="text-xs text-amber-200/80">
+            La calidad del acta depende directamente de la calidad del audio. Grabaciones con ruido de fondo, voces superpuestas o baja claridad pueden afectar el resultado.
+          </p>
+        </div>
       </div>
 
       {estado === 'listo' && markdown && (

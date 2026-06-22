@@ -123,6 +123,7 @@ export async function POST(request: NextRequest) {
 
     let markdown = '';
     let lastError: Error | null = null;
+    let usedModel = '';
 
     for (const modelName of MODELS) {
       lastError = null;
@@ -133,20 +134,18 @@ export async function POST(request: NextRequest) {
         try {
           const result = await model.generateContent(modelParts);
           markdown = result.response.text();
+          usedModel = modelName;
           break;
         } catch (err) {
           lastError = err instanceof Error ? err : new Error(String(err));
           if (isRateLimit(err)) {
-            // Cuota agotada → saltar al siguiente modelo de inmediato
             console.warn(`[${modelName}] Límite de cuota alcanzado, probando siguiente modelo...`);
             break;
           }
           if (isOverloaded(err) && attempt < maxAttempts) {
-            // Sobrecarga temporal → reintentar una vez con delay
             await new Promise(res => setTimeout(res, attempt * 3000));
             continue;
           }
-          // Cualquier otro error → saltar al siguiente modelo
           console.warn(`[${modelName}] Error: ${lastError.message}, probando siguiente modelo...`);
           break;
         }
@@ -157,7 +156,7 @@ export async function POST(request: NextRequest) {
 
     if (lastError) throw lastError;
 
-    return NextResponse.json({ markdown });
+    return NextResponse.json({ markdown, model: usedModel });
   } catch (error) {
     console.error('Error generando acta:', error);
     const message = error instanceof Error ? error.message : 'Error desconocido';
