@@ -99,7 +99,7 @@ export default function Home() {
   return (
     <div className="max-w-4xl mx-auto px-6 pt-28 pb-10">
       <div className="no-print">
-        <p className="text-white mb-8">Sube el audio de tu reunión y obtén el acta en segundos.</p>
+        <p className="mb-8 font-medium">Sube el audio de tu reunión y obtén el acta en segundos.</p>
 
         <div
           className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-colors ${
