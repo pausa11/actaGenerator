@@ -16,6 +16,7 @@ export default function Home() {
   const [buscar, setBuscar] = useState('');
   const [reemplazar, setReemplazar] = useState('');
   const [ultimoReemplazo, setUltimoReemplazo] = useState<number | null>(null);
+  const [descargandoPDF, setDescargandoPDF] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const procesarArchivo = (file: File) => {
@@ -84,6 +85,30 @@ export default function Home() {
     setUltimoReemplazo(coincidencias);
     setBuscar('');
     setReemplazar('');
+  };
+
+  const descargarPDF = async () => {
+    setDescargandoPDF(true);
+    try {
+      const res = await fetch('/api/pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ markdown }),
+      });
+      if (!res.ok) throw new Error('Error al generar PDF');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `acta-${new Date().toISOString().split('T')[0]}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al generar PDF');
+      setEstado('error');
+    } finally {
+      setDescargandoPDF(false);
+    }
   };
 
   const descargarMd = () => {
@@ -212,10 +237,11 @@ export default function Home() {
               Descargar .md
             </button>
             <button
-              onClick={() => window.print()}
-              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+              onClick={descargarPDF}
+              disabled={descargandoPDF}
+              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              Exportar PDF
+              {descargandoPDF ? 'Generando PDF…' : 'Exportar PDF'}
             </button>
           </div>
 
