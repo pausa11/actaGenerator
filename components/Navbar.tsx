@@ -24,11 +24,11 @@ const items = [
     ],
   },
   {
-    label: 'Soporte',
+    label: 'Inicio',
     bgColor: '#1e293b',
     textColor: '#cbd5e1',
     links: [
-      { label: 'Ayuda', href: '#', ariaLabel: 'Centro de ayuda' },
+      { label: 'Ir al inicio', href: '/', ariaLabel: 'Ir a la página principal' },
     ],
   },
 ];
