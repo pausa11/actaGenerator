@@ -46,7 +46,7 @@ export default function Navbar() {
     <CardNav
       logoText="Acta Generator"
       items={items}
-      baseColor="#ffffff"
+      baseColor="rgba(255,255,255,0.18)"
       menuColor="#0f172a"
       buttonBgColor="#2563eb"
       buttonTextColor="#ffffff"

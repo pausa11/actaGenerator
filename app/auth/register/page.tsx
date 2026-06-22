@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { Mail } from 'lucide-react';
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
@@ -35,7 +36,7 @@ export default function RegisterPage() {
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
         <div className="w-full max-w-sm bg-white rounded-2xl border border-gray-200 p-8 shadow-sm text-center">
-          <p className="text-3xl mb-3">📬</p>
+          <Mail className="mx-auto mb-3 text-blue-500" size={32} />
           <h2 className="text-xl font-bold text-gray-900 mb-2">Revisa tu correo</h2>
           <p className="text-sm text-gray-500">
             Te enviamos un enlace de confirmación a <strong>{email}</strong>. Haz clic en él para activar tu cuenta.

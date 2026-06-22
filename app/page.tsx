@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
+import { Mic, FolderOpen } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -102,12 +103,12 @@ export default function Home() {
         <p className="mb-8 font-medium">Sube el audio de tu reunión y obtén el acta en segundos.</p>
 
         <div
-          className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-colors ${
+          className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-colors backdrop-blur-xl ${
             arrastrando
-              ? 'border-blue-500 bg-blue-50'
+              ? 'border-blue-400/70 bg-blue-500/20'
               : archivo
-              ? 'border-green-400 bg-green-50'
-              : 'border-gray-300 hover:border-gray-400 bg-white'
+              ? 'border-green-400/70 bg-green-500/15'
+              : 'border-white/40 hover:border-white/60 bg-white/15'
           }`}
           onDrop={onDrop}
           onDragOver={onDragOver}
@@ -124,7 +125,7 @@ export default function Home() {
 
           {archivo ? (
             <div>
-              <p className="text-2xl mb-2">🎙️</p>
+              <Mic className="mx-auto mb-2 text-gray-600" size={28} />
               <p className="font-medium text-gray-800">{archivo.name}</p>
               <p className="text-sm text-gray-500 mt-1">
                 {(archivo.size / 1024 / 1024).toFixed(1)} MB — haz clic para cambiar
@@ -132,7 +133,7 @@ export default function Home() {
             </div>
           ) : (
             <div>
-              <p className="text-2xl mb-2">📁</p>
+              <FolderOpen className="mx-auto mb-2 text-gray-400" size={28} />
               <p className="text-gray-600 font-medium">Arrastra tu audio aquí</p>
               <p className="text-sm text-gray-400 mt-1">o haz clic para seleccionar — mp3, m4a, wav, ogg</p>
             </div>
@@ -140,7 +141,7 @@ export default function Home() {
         </div>
 
         {estado === 'error' && (
-          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          <div className="mt-4 p-4 bg-red-500/15 backdrop-blur-xl border border-red-400/30 rounded-lg text-red-700 text-sm">
             {error}
           </div>
         )}
@@ -166,7 +167,7 @@ export default function Home() {
 
       {estado === 'listo' && markdown && (
         <div>
-          <div className="no-print mt-10 mb-4 p-4 bg-gray-50 border border-gray-200 rounded-xl">
+          <div className="no-print mt-10 mb-4 p-4 bg-white/15 backdrop-blur-xl border border-white/30 rounded-xl">
             <p className="text-sm font-medium text-gray-700 mb-3">Corregir texto transcripto</p>
             <div className="flex gap-2 items-center flex-wrap">
               <input
@@ -218,7 +219,7 @@ export default function Home() {
             </button>
           </div>
 
-          <article className="bg-white rounded-xl border border-gray-200 p-10 prose prose-gray max-w-none">
+          <article className="bg-white/20 backdrop-blur-xl rounded-xl border border-white/30 p-10 prose prose-gray max-w-none">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>
           </article>
         </div>
