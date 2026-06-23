@@ -1,4 +1,4 @@
-export const ACTA_PROMPT = `Eres un asistente experto en redacción de actas de reuniones corporativas.
+const ACTA_PROMPT_BASE = `Eres un asistente experto en redacción de actas de reuniones corporativas.
 
 Escucha el audio de esta reunión y genera un acta formal y completa en español, en formato Markdown.
 
@@ -57,3 +57,16 @@ Instrucciones adicionales:
 - Sé preciso y formal.
 - Captura todos los compromisos y decisiones concretas.
 - No inventes información que no esté en el audio.`;
+
+export function buildActaPrompt(groupContext?: string | null): string {
+  if (!groupContext?.trim()) return ACTA_PROMPT_BASE;
+  return `${ACTA_PROMPT_BASE}
+
+## Contexto específico del grupo
+
+${groupContext.trim()}
+
+Tenés en cuenta este contexto al redactar el acta: usalo para entender mejor los temas, los participantes, la jerga o el estilo esperado en este grupo.`;
+}
+
+export const ACTA_PROMPT = ACTA_PROMPT_BASE;

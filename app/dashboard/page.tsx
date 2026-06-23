@@ -21,6 +21,7 @@ export default function DashboardPage() {
   const [mostrarForm, setMostrarForm] = useState(false);
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
+  const [contexto, setContexto] = useState('');
   const [guardando, setGuardando] = useState(false);
   const [eliminando, setEliminando] = useState<string | null>(null);
   const [error, setError] = useState('');
@@ -55,7 +56,7 @@ export default function DashboardPage() {
       const res = await fetch('/api/groups', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: nombre, description: descripcion }),
+        body: JSON.stringify({ name: nombre, description: descripcion, context: contexto }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -64,6 +65,7 @@ export default function DashboardPage() {
       }
       setNombre('');
       setDescripcion('');
+      setContexto('');
       setMostrarForm(false);
       await cargarGrupos();
     } finally {
@@ -130,7 +132,7 @@ export default function DashboardPage() {
                   value={nombre}
                   onChange={(e) => setNombre(e.target.value)}
                   placeholder="Ej: Proyecto Alpha, Equipo ventas…"
-                  className="w-full px-3 py-2 bg-white/8 border border-white/15 rounded-lg text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-3 py-2 bg-white/10 border border-white/15 rounded-lg text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
               </div>
 
@@ -139,12 +141,26 @@ export default function DashboardPage() {
                   Descripción <span className="text-white/30">(opcional)</span>
                 </label>
                 <textarea
-                  rows={3}
+                  rows={2}
                   value={descripcion}
                   onChange={(e) => setDescripcion(e.target.value)}
                   placeholder="Breve descripción del grupo…"
-                  className="w-full px-3 py-2 bg-white/8 border border-white/15 rounded-lg text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                  className="w-full px-3 py-2 bg-white/10 border border-white/15 rounded-lg text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white/70 mb-1">
+                  Contexto / instrucciones para Gemini <span className="text-white/30">(opcional)</span>
+                </label>
+                <textarea
+                  rows={3}
+                  value={contexto}
+                  onChange={(e) => setContexto(e.target.value)}
+                  placeholder={`Ej: Los participantes son del equipo de ventas. Usar tono formal. El moderador es Juan García.`}
+                  className="w-full px-3 py-2 bg-white/10 border border-white/15 rounded-lg text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                />
+                <p className="text-white/25 text-xs mt-1">Gemini lo usará como guía al generar las actas de este grupo.</p>
               </div>
 
               {error && (
@@ -197,7 +213,8 @@ export default function DashboardPage() {
           {grupos.map((grupo) => (
             <div
               key={grupo.id}
-              className="relative group p-5 rounded-2xl bg-white/5 hover:bg-white/8 border border-white/10 hover:border-white/20 backdrop-blur-xl transition-all"
+              onClick={() => router.push(`/dashboard/grupos/${grupo.id}`)}
+              className="relative group p-5 rounded-2xl bg-white/5 hover:bg-white/8 border border-white/10 hover:border-white/20 backdrop-blur-xl transition-all cursor-pointer"
             >
               {/* Ícono y nombre */}
               <div className="flex items-start justify-between gap-3 mb-3">
@@ -205,7 +222,7 @@ export default function DashboardPage() {
                   <Folder size={18} className="text-purple-400" />
                 </div>
                 <button
-                  onClick={() => eliminarGrupo(grupo.id)}
+                  onClick={(e) => { e.stopPropagation(); eliminarGrupo(grupo.id); }}
                   disabled={eliminando === grupo.id}
                   className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all disabled:opacity-40"
                   title="Eliminar grupo"

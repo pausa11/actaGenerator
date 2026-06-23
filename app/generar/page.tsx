@@ -1,12 +1,17 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
-import { Mic, FolderOpen } from 'lucide-react';
+import { useState, useRef, useCallback, useEffect, Suspense } from 'react';
+import { Mic, FolderOpen, Save, Check } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useActaGenerator } from '@/hooks/useActaGenerator';
 
-export default function GenerarPage() {
+function GenerarContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const groupId = searchParams.get('groupId');
+
   const {
     estado,
     markdown,
@@ -27,7 +32,19 @@ export default function GenerarPage() {
   } = useActaGenerator();
 
   const [arrastrando, setArrastrando] = useState(false);
+  const [guardando, setGuardando] = useState(false);
+  const [guardado, setGuardado] = useState(false);
+  const [errorGuardar, setErrorGuardar] = useState('');
+  const [nombreGrupo, setNombreGrupo] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!groupId) return;
+    fetch('/api/groups').then(r => r.json()).then((grupos: { id: string; name: string }[]) => {
+      const g = grupos.find(g => g.id === groupId);
+      if (g) setNombreGrupo(g.name);
+    }).catch(() => {});
+  }, [groupId]);
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -36,21 +53,55 @@ export default function GenerarPage() {
     if (file) procesarArchivo(file);
   }, [procesarArchivo]);
 
-  const onDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setArrastrando(true);
-  };
-
+  const onDragOver = (e: React.DragEvent) => { e.preventDefault(); setArrastrando(true); };
   const onDragLeave = () => setArrastrando(false);
-
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) procesarArchivo(file);
   };
 
+  function extractTitle(md: string): string {
+    const h1 = md.match(/^#\s+(.+)$/m);
+    if (h1) return h1[1].trim();
+    const firstLine = md.split('\n').find(l => l.trim());
+    return firstLine?.replace(/^#+\s*/, '').trim() || `Acta del ${new Date().toLocaleDateString('es-AR')}`;
+  }
+
+  async function guardarActa() {
+    if (!markdown || guardando) return;
+    setGuardando(true);
+    setErrorGuardar('');
+    try {
+      const title = extractTitle(markdown);
+      const res = await fetch('/api/actas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ groupId, title, content: markdown, modelUsed: modeloUsado }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setErrorGuardar(data.error ?? 'Error al guardar');
+        return;
+      }
+      setGuardado(true);
+      if (groupId) {
+        setTimeout(() => router.push(`/dashboard/grupos/${groupId}`), 1200);
+      }
+    } finally {
+      setGuardando(false);
+    }
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-6 pt-10 pb-10">
       <div className="no-print">
+        {groupId && nombreGrupo && (
+          <div className="mb-4 flex items-center gap-2 px-3 py-2 bg-purple-600/15 border border-purple-400/25 rounded-lg">
+            <span className="text-purple-400 text-sm">Generando para el grupo:</span>
+            <span className="text-white text-sm font-medium">{nombreGrupo}</span>
+          </div>
+        )}
+
         <p className="mb-8 font-medium text-white">Sube el audio de tu reunión y obtén el acta en segundos.</p>
 
         <div
@@ -73,7 +124,6 @@ export default function GenerarPage() {
             className="hidden"
             onChange={onFileChange}
           />
-
           {archivo ? (
             <div>
               <Mic className="mx-auto mb-2 text-white/70" size={28} />
@@ -98,7 +148,7 @@ export default function GenerarPage() {
         )}
 
         <button
-          onClick={generarActa}
+          onClick={() => generarActa(groupId)}
           disabled={!archivo || estado === 'cargando'}
           className="mt-6 w-full py-3 px-6 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
@@ -168,7 +218,7 @@ export default function GenerarPage() {
             )}
           </div>
 
-          <div className="no-print flex gap-3 mb-6">
+          <div className="no-print flex gap-3 mb-6 flex-wrap">
             <button
               onClick={descargarMd}
               className="px-4 py-2 bg-gray-800 text-white text-sm font-medium rounded-lg hover:bg-gray-900 transition-colors"
@@ -182,7 +232,26 @@ export default function GenerarPage() {
             >
               {descargandoPDF ? 'Generando PDF…' : 'Exportar PDF'}
             </button>
+            {groupId && (
+              <button
+                onClick={guardarActa}
+                disabled={guardando || guardado}
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  guardado
+                    ? 'bg-green-600/20 border border-green-400/30 text-green-400 cursor-default'
+                    : 'bg-white/10 hover:bg-white/20 border border-white/20 text-white disabled:opacity-50 disabled:cursor-not-allowed'
+                }`}
+              >
+                {guardado ? <><Check size={15} /> Guardada</> : <><Save size={15} /> {guardando ? 'Guardando…' : 'Guardar en grupo'}</>}
+              </button>
+            )}
           </div>
+
+          {errorGuardar && (
+            <p className="no-print mb-4 text-sm text-red-300 bg-red-500/15 border border-red-400/25 rounded-lg px-3 py-2">
+              {errorGuardar}
+            </p>
+          )}
 
           <article className="bg-white rounded-xl border border-white/20 p-10 prose prose-gray max-w-none">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>
@@ -190,5 +259,13 @@ export default function GenerarPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function GenerarPage() {
+  return (
+    <Suspense>
+      <GenerarContent />
+    </Suspense>
   );
 }

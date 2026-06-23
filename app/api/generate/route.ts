@@ -6,7 +6,10 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 import { randomUUID } from 'crypto';
 import { createClient } from '@/lib/supabase/server';
-import { ACTA_PROMPT } from '@/lib/prompts';
+import { buildActaPrompt } from '@/lib/prompts';
+import { db } from '@/lib/db';
+import { groups, users } from '@/lib/db/schema';
+import { and, eq } from 'drizzle-orm';
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -26,9 +29,22 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const audioFile = formData.get('audio') as File | null;
+    const groupId = formData.get('groupId') as string | null;
 
     if (!audioFile) {
       return NextResponse.json({ error: 'No se recibió archivo de audio' }, { status: 400 });
+    }
+
+    let groupContext: string | null = null;
+    if (groupId) {
+      const [dbUser] = await db.select().from(users).where(eq(users.supabaseId, user.id));
+      if (dbUser) {
+        const [group] = await db
+          .select({ context: groups.context })
+          .from(groups)
+          .where(and(eq(groups.id, groupId), eq(groups.userId, dbUser.id)));
+        groupContext = group?.context ?? null;
+      }
     }
 
     const extension = audioFile.name.split('.').pop() ?? 'mp3';
@@ -46,7 +62,7 @@ export async function POST(request: NextRequest) {
     const genAI = new GoogleGenerativeAI(apiKey);
     const modelParts = [
       { fileData: { mimeType: uploadResult.file.mimeType, fileUri: uploadResult.file.uri } },
-      { text: ACTA_PROMPT },
+      { text: buildActaPrompt(groupContext) },
     ];
 
     // Ordenados de mejor a peor calidad; todos soportan audio via Files API

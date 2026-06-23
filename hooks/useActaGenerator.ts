@@ -37,7 +37,7 @@ export function useActaGenerator() {
     setMarkdown('');
   }, []);
 
-  const generarActa = async () => {
+  const generarActa = async (groupId?: string | null) => {
     if (!archivo) return;
 
     setEstado('cargando');
@@ -48,6 +48,7 @@ export function useActaGenerator() {
     try {
       const form = new FormData();
       form.append('audio', archivo);
+      if (groupId) form.append('groupId', groupId);
 
       const res = await fetch('/api/generate', { method: 'POST', body: form });
       const data = await res.json();
