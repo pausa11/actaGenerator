@@ -20,6 +20,7 @@ interface NavItem {
 
 interface CardNavProps {
   logoText?: string;
+  greeting?: string;
   items?: NavItem[];
   className?: string;
   ease?: string;
@@ -33,6 +34,7 @@ interface CardNavProps {
 
 const CardNav = ({
   logoText,
+  greeting,
   items,
   className = '',
   ease = 'power3.out',
@@ -170,6 +172,12 @@ const CardNav = ({
             <div className="logo-container">
               <span className="logo-text">{logoText}</span>
             </div>
+          )}
+
+          {greeting && (
+            <span className="card-nav-greeting">
+              Hola, <strong>{greeting}</strong>
+            </span>
           )}
 
           {onButtonClick && (

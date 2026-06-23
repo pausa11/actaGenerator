@@ -88,6 +88,19 @@
   white-space: nowrap;
 }
 
+.card-nav-greeting {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.7);
+  white-space: nowrap;
+  margin-right: 0.25rem;
+}
+
+.card-nav-greeting strong {
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 600;
+}
+
 .card-nav-cta-button {
   background-color: #111;
   color: white;

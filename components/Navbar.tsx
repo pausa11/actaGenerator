@@ -36,14 +36,22 @@ const items = [
 export default function Navbar() {
   const router = useRouter();
   const [sesionActiva, setSesionActiva] = useState(false);
+  const [nombreUsuario, setNombreUsuario] = useState<string | undefined>();
+
+  const extraerNombre = (session: { user?: { user_metadata?: { full_name?: string }; email?: string } } | null) => {
+    if (!session?.user) return undefined;
+    return session.user.user_metadata?.full_name || undefined;
+  };
 
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getSession().then(({ data }) => {
       setSesionActiva(!!data.session);
+      setNombreUsuario(extraerNombre(data.session));
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSesionActiva(!!session);
+      setNombreUsuario(extraerNombre(session));
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -58,6 +66,7 @@ export default function Navbar() {
   return (
     <CardNav
       logoText="Acta Generator"
+      greeting={sesionActiva ? nombreUsuario : undefined}
       items={items}
       baseColor="rgba(255,255,255,0.18)"
       menuColor="#ffffff"

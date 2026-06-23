@@ -7,6 +7,7 @@ import { Mail } from 'lucide-react';
 import SplitText from '@/components/SplitText';
 
 export default function RegisterPage() {
+  const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -22,7 +23,10 @@ export default function RegisterPage() {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        data: { full_name: nombre.trim() },
+      },
     });
 
     if (error) {
@@ -60,6 +64,18 @@ export default function RegisterPage() {
         <p className="text-sm text-white/60 mb-6">Regístrate para acceder al generador de actas.</p>
 
         <form onSubmit={handleRegister} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-white/80 mb-1">Nombre</label>
+            <input
+              type="text"
+              required
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              placeholder="Tu nombre"
+            />
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-white/80 mb-1">Correo</label>
             <input
