@@ -12,6 +12,7 @@ const items = [
     textColor: '#e9d5ff',
     links: [
       { label: 'Nueva acta', href: '/generar', ariaLabel: 'Ir a generar acta' },
+      { label: 'Dashboard', href: '/dashboard', ariaLabel: 'Ir al dashboard' },
     ],
   },
   {
