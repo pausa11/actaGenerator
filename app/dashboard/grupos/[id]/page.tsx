@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { ArrowLeft, Plus, Trash2, FileText, Clock, Settings2, X } from 'lucide-react';
@@ -36,6 +36,18 @@ export default function GroupDetailPage() {
   const [mostrarContexto, setMostrarContexto] = useState(false);
   const [contextoEdit, setContextoEdit] = useState('');
   const [guardandoContexto, setGuardandoContexto] = useState(false);
+  const actaModalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = actaModalRef.current;
+    if (!el) return;
+    const handler = (e: WheelEvent) => {
+      e.stopPropagation();
+      el.scrollTop += e.deltaY;
+    };
+    el.addEventListener('wheel', handler, { passive: true });
+    return () => el.removeEventListener('wheel', handler);
+  }, [actaDetalle]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -246,7 +258,10 @@ export default function GroupDetailPage() {
 
       {/* Modal detalle acta */}
       {actaDetalle && (
-        <div className="fixed inset-0 z-[200] flex items-start justify-center bg-black/70 backdrop-blur-sm px-4 py-8 overflow-y-auto">
+        <div
+          ref={actaModalRef}
+          className="fixed inset-0 z-[200] flex items-start justify-center bg-black/70 backdrop-blur-sm px-4 py-8 overflow-y-auto"
+        >
           <div className="w-full max-w-3xl bg-[#0f0a1e] border border-white/15 rounded-2xl shadow-2xl">
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
               <h2 className="text-base font-semibold text-white truncate pr-4">{actaDetalle.title}</h2>
