@@ -40,7 +40,10 @@ export default function Navbar() {
 
   const extraerNombre = (session: { user?: { user_metadata?: { full_name?: string }; email?: string } } | null) => {
     if (!session?.user) return undefined;
-    return session.user.user_metadata?.full_name || undefined;
+    const fullName = session.user.user_metadata?.full_name;
+    if (fullName) return fullName;
+    const email = session.user.email;
+    return email ? email.split('@')[0] : undefined;
   };
 
   useEffect(() => {

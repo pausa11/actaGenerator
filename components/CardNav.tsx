@@ -174,22 +174,24 @@ const CardNav = ({
             </div>
           )}
 
-          {greeting && (
-            <span className="card-nav-greeting">
-              Hola, <strong>{greeting}</strong>
-            </span>
-          )}
+          <div className="card-nav-right">
+            {greeting && (
+              <span className="card-nav-greeting">
+                Hola, <strong>{greeting}</strong>
+              </span>
+            )}
 
-          {onButtonClick && (
-            <button
-              type="button"
-              className="card-nav-cta-button"
-              style={{ backgroundColor: buttonBgColor, color: buttonTextColor }}
-              onClick={onButtonClick}
-            >
-              {buttonLabel}
-            </button>
-          )}
+            {onButtonClick && (
+              <button
+                type="button"
+                className="card-nav-cta-button"
+                style={{ backgroundColor: buttonBgColor, color: buttonTextColor }}
+                onClick={onButtonClick}
+              >
+                {buttonLabel}
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="card-nav-content" aria-hidden={!isExpanded}>

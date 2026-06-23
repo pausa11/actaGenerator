@@ -88,12 +88,18 @@
   white-space: nowrap;
 }
 
+.card-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 100%;
+}
+
 .card-nav-greeting {
   font-size: 0.8rem;
   font-weight: 400;
   color: rgba(255, 255, 255, 0.7);
   white-space: nowrap;
-  margin-right: 0.25rem;
 }
 
 .card-nav-greeting strong {
