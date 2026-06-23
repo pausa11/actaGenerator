@@ -4,40 +4,37 @@ import { useState, useRef, useCallback } from 'react';
 import { Mic, FolderOpen } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { useActaGenerator } from '@/hooks/useActaGenerator';
 
-type Estado = 'idle' | 'cargando' | 'listo' | 'error';
+export default function GenerarPage() {
+  const {
+    estado,
+    markdown,
+    error,
+    archivo,
+    buscar,
+    setBuscar,
+    reemplazar,
+    setReemplazar,
+    ultimoReemplazo,
+    descargandoPDF,
+    modeloUsado,
+    procesarArchivo,
+    generarActa,
+    aplicarCorrecion,
+    descargarPDF,
+    descargarMd,
+  } = useActaGenerator();
 
-export default function Home() {
-  const [estado, setEstado] = useState<Estado>('idle');
-  const [markdown, setMarkdown] = useState('');
-  const [error, setError] = useState('');
-  const [archivo, setArchivo] = useState<File | null>(null);
   const [arrastrando, setArrastrando] = useState(false);
-  const [buscar, setBuscar] = useState('');
-  const [reemplazar, setReemplazar] = useState('');
-  const [ultimoReemplazo, setUltimoReemplazo] = useState<number | null>(null);
-  const [descargandoPDF, setDescargandoPDF] = useState(false);
-  const [modeloUsado, setModeloUsado] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
-
-  const procesarArchivo = (file: File) => {
-    if (!file.type.startsWith('audio/')) {
-      setError('El archivo debe ser de audio (mp3, m4a, wav, etc.)');
-      setEstado('error');
-      return;
-    }
-    setArchivo(file);
-    setEstado('idle');
-    setError('');
-    setMarkdown('');
-  };
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setArrastrando(false);
     const file = e.dataTransfer.files[0];
     if (file) procesarArchivo(file);
-  }, []);
+  }, [procesarArchivo]);
 
   const onDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -50,80 +47,6 @@ export default function Home() {
     const file = e.target.files?.[0];
     if (file) procesarArchivo(file);
   };
-
-  const generarActa = async () => {
-    if (!archivo) return;
-
-    setEstado('cargando');
-    setError('');
-    setMarkdown('');
-    setModeloUsado('');
-
-    try {
-      const form = new FormData();
-      form.append('audio', archivo);
-
-      const res = await fetch('/api/generate', { method: 'POST', body: form });
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data.error || 'Error al generar el acta');
-
-      setMarkdown(data.markdown);
-      setModeloUsado(data.model ?? '');
-      setEstado('listo');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error desconocido');
-      setEstado('error');
-    }
-  };
-
-  const aplicarCorrecion = () => {
-    if (!buscar.trim()) return;
-    const escapado = buscar.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regex = new RegExp(escapado, 'g');
-    const coincidencias = (markdown.match(regex) || []).length;
-    if (coincidencias > 0) {
-      setMarkdown(markdown.replace(regex, reemplazar));
-    }
-    setUltimoReemplazo(coincidencias);
-    setBuscar('');
-    setReemplazar('');
-  };
-
-  const descargarPDF = async () => {
-    setDescargandoPDF(true);
-    try {
-      const res = await fetch('/api/pdf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ markdown }),
-      });
-      if (!res.ok) throw new Error('Error al generar PDF');
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `acta-${new Date().toISOString().split('T')[0]}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al generar PDF');
-      setEstado('error');
-    } finally {
-      setDescargandoPDF(false);
-    }
-  };
-
-  const descargarMd = () => {
-    const blob = new Blob([markdown], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `acta-${new Date().toISOString().split('T')[0]}.md`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
 
   return (
     <div className="max-w-4xl mx-auto px-6 pt-10 pb-10">
@@ -215,7 +138,7 @@ export default function Home() {
                 type="text"
                 placeholder="Buscar…"
                 value={buscar}
-                onChange={(e) => { setBuscar(e.target.value); setUltimoReemplazo(null); }}
+                onChange={(e) => setBuscar(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && aplicarCorrecion()}
                 className="flex-1 min-w-0 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
               />
@@ -224,7 +147,7 @@ export default function Home() {
                 type="text"
                 placeholder="Reemplazar por…"
                 value={reemplazar}
-                onChange={(e) => { setReemplazar(e.target.value); setUltimoReemplazo(null); }}
+                onChange={(e) => setReemplazar(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && aplicarCorrecion()}
                 className="flex-1 min-w-0 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
               />

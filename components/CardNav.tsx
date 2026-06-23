@@ -2,9 +2,34 @@
 
 import { useLayoutEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
-// use your own icon import if react-icons is not available
 import { GoArrowUpRight } from 'react-icons/go';
 import './CardNav.css';
+
+interface NavLink {
+  label: string;
+  href: string;
+  ariaLabel?: string;
+}
+
+interface NavItem {
+  label: string;
+  bgColor?: string;
+  textColor?: string;
+  links?: NavLink[];
+}
+
+interface CardNavProps {
+  logoText?: string;
+  items?: NavItem[];
+  className?: string;
+  ease?: string;
+  baseColor?: string;
+  menuColor?: string;
+  buttonBgColor?: string;
+  buttonTextColor?: string;
+  buttonLabel?: string;
+  onButtonClick?: () => void;
+}
 
 const CardNav = ({
   logoText,
@@ -16,21 +41,21 @@ const CardNav = ({
   buttonBgColor,
   buttonTextColor,
   buttonLabel = 'Get Started',
-  onButtonClick
-}) => {
+  onButtonClick,
+}: CardNavProps) => {
   const [isHamburgerOpen, setIsHamburgerOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const navRef = useRef(null);
-  const cardsRef = useRef([]);
-  const tlRef = useRef(null);
+  const navRef = useRef<HTMLElement>(null);
+  const cardsRef = useRef<HTMLDivElement[]>([]);
+  const tlRef = useRef<gsap.core.Timeline | null>(null);
 
-  const calculateHeight = () => {
+  const calculateHeight = (): number => {
     const navEl = navRef.current;
     if (!navEl) return 260;
 
     const isMobile = window.matchMedia('(max-width: 768px)').matches;
     if (isMobile) {
-      const contentEl = navEl.querySelector('.card-nav-content');
+      const contentEl = navEl.querySelector<HTMLElement>('.card-nav-content');
       if (contentEl) {
         const wasVisible = contentEl.style.visibility;
         const wasPointerEvents = contentEl.style.pointerEvents;
@@ -59,7 +84,7 @@ const CardNav = ({
     return 260;
   };
 
-  const createTimeline = () => {
+  const createTimeline = (): gsap.core.Timeline | null => {
     const navEl = navRef.current;
     if (!navEl) return null;
 
@@ -67,13 +92,7 @@ const CardNav = ({
     gsap.set(cardsRef.current, { y: 50, opacity: 0 });
 
     const tl = gsap.timeline({ paused: true });
-
-    tl.to(navEl, {
-      height: calculateHeight,
-      duration: 0.4,
-      ease
-    });
-
+    tl.to(navEl, { height: calculateHeight, duration: 0.4, ease });
     tl.to(cardsRef.current, { y: 0, opacity: 1, duration: 0.4, ease, stagger: 0.08 }, '-=0.1');
 
     return tl;
@@ -82,7 +101,6 @@ const CardNav = ({
   useLayoutEffect(() => {
     const tl = createTimeline();
     tlRef.current = tl;
-
     return () => {
       tl?.kill();
       tlRef.current = null;
@@ -93,11 +111,9 @@ const CardNav = ({
   useLayoutEffect(() => {
     const handleResize = () => {
       if (!tlRef.current) return;
-
       if (isExpanded) {
         const newHeight = calculateHeight();
         gsap.set(navRef.current, { height: newHeight });
-
         tlRef.current.kill();
         const newTl = createTimeline();
         if (newTl) {
@@ -107,9 +123,7 @@ const CardNav = ({
       } else {
         tlRef.current.kill();
         const newTl = createTimeline();
-        if (newTl) {
-          tlRef.current = newTl;
-        }
+        if (newTl) tlRef.current = newTl;
       }
     };
 
@@ -132,7 +146,7 @@ const CardNav = ({
     }
   };
 
-  const setCardRef = i => el => {
+  const setCardRef = (i: number) => (el: HTMLDivElement | null) => {
     if (el) cardsRef.current[i] = el;
   };
 

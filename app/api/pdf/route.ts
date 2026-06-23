@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
+  }
+
   const serviceUrl = process.env.PRINCE_SERVICE_URL;
   if (!serviceUrl) {
     return NextResponse.json({ error: 'PRINCE_SERVICE_URL no configurada' }, { status: 500 });
