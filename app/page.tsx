@@ -104,7 +104,7 @@ export default function Landing() {
             delay={35}
             textAlign="center"
           />{' '}
-          <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent inline-block align-top">
             reunión.
           </span>
           <br />
@@ -203,7 +203,7 @@ export default function Landing() {
             </div>
 
             {/* Contenido del documento */}
-            <div className="p-8 md:p-12 overflow-auto max-h-[600px]">
+            <div className="p-8 md:p-12">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 className="prose prose-sm prose-gray max-w-none"
