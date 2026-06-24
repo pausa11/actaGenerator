@@ -77,7 +77,7 @@ export function useActaGenerator() {
     setReemplazarRaw('');
   };
 
-  const descargarPDF = async (extraMarkdown = '') => {
+  const descargarPDF = async (extraMarkdown = '', titulo = '') => {
     setDescargandoPDF(true);
     try {
       const contenido = extraMarkdown ? `${markdown}\n\n${extraMarkdown}` : markdown;
@@ -91,7 +91,10 @@ export function useActaGenerator() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `acta-${new Date().toISOString().split('T')[0]}.pdf`;
+      const nombre = titulo.trim()
+        ? titulo.trim().replace(/[/\\:*?"<>|]/g, '-').replace(/\s+/g, '_')
+        : `acta-${new Date().toISOString().split('T')[0]}`;
+      a.download = `${nombre}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
@@ -102,12 +105,15 @@ export function useActaGenerator() {
     }
   };
 
-  const descargarMd = () => {
+  const descargarMd = (titulo = '') => {
     const blob = new Blob([markdown], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `acta-${new Date().toISOString().split('T')[0]}.md`;
+    const nombre = titulo.trim()
+      ? titulo.trim().replace(/[/\\:*?"<>|]/g, '-').replace(/\s+/g, '_')
+      : `acta-${new Date().toISOString().split('T')[0]}`;
+    a.download = `${nombre}.md`;
     a.click();
     URL.revokeObjectURL(url);
   };

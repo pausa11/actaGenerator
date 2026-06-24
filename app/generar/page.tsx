@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect, Suspense } from 'react';
-import { Mic, FolderOpen, Save, Check, ImagePlus, X } from 'lucide-react';
+import { Mic, FolderOpen, Save, Check, ImagePlus, X, Pencil } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -36,6 +36,7 @@ function GenerarContent() {
   const [guardado, setGuardado] = useState(false);
   const [errorGuardar, setErrorGuardar] = useState('');
   const [nombreGrupo, setNombreGrupo] = useState('');
+  const [titulo, setTitulo] = useState('');
   const [imagenes, setImagenes] = useState<{ name: string; dataUrl: string }[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -47,6 +48,15 @@ function GenerarContent() {
       if (g) setNombreGrupo(g.name);
     }).catch(() => {});
   }, [groupId]);
+
+  useEffect(() => {
+    if (estado === 'listo') {
+      const now = new Date();
+      const ts = now.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      setTitulo(nombreGrupo ? `${nombreGrupo} - ${ts}` : `Acta del ${ts}`);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [estado]);
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -100,7 +110,7 @@ function GenerarContent() {
     setGuardando(true);
     setErrorGuardar('');
     try {
-      const title = extractTitle(markdown);
+      const title = titulo.trim() || extractTitle(markdown);
       const res = await fetch('/api/actas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -281,15 +291,29 @@ function GenerarContent() {
             )}
           </div>
 
+          <div className="no-print mb-4 p-4 bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl">
+            <label className="flex items-center gap-2 text-sm font-medium text-white mb-2">
+              <Pencil size={14} className="text-purple-400" />
+              Título del acta
+            </label>
+            <input
+              type="text"
+              value={titulo}
+              onChange={(e) => setTitulo(e.target.value)}
+              placeholder="Título del acta…"
+              className="w-full px-3 py-2 text-sm bg-white/10 border border-white/20 text-white placeholder-white/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+          </div>
+
           <div className="no-print flex gap-3 mb-6 flex-wrap">
             <button
-              onClick={descargarMd}
+              onClick={() => descargarMd(titulo)}
               className="px-4 py-2 bg-gray-800 text-white text-sm font-medium rounded-lg hover:bg-gray-900 transition-colors"
             >
               Descargar .md
             </button>
             <button
-              onClick={() => descargarPDF(buildImagenesMarkdown())}
+              onClick={() => descargarPDF(buildImagenesMarkdown(), titulo)}
               disabled={descargandoPDF}
               className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
