@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { ArrowLeft, Plus, Trash2, FileText, Clock, Settings2, X, Download, FileDown } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, FileText, Clock, Settings2, X, Download, FileDown, ImagePlus, Image as ImageIcon } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -23,6 +23,17 @@ type Group = {
   context: string | null;
 };
 
+type ActaImage = {
+  id: string;
+  actaId: string;
+  url: string;
+  name: string | null;
+  position: number | null;
+  createdAt: string;
+};
+
+type ModalTab = 'contenido' | 'imagenes';
+
 export default function GroupDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -34,10 +45,21 @@ export default function GroupDetailPage() {
   const [eliminando, setEliminando] = useState<string | null>(null);
   const [descargandoPDFId, setDescargandoPDFId] = useState<string | null>(null);
   const [descargandoPDFModal, setDescargandoPDFModal] = useState(false);
+  const [incluirImagenesPDF, setIncluirImagenesPDF] = useState(true);
   const [actaDetalle, setActaDetalle] = useState<Acta | null>(null);
   const [mostrarContexto, setMostrarContexto] = useState(false);
   const [contextoEdit, setContextoEdit] = useState('');
   const [guardandoContexto, setGuardandoContexto] = useState(false);
+
+  // Imágenes
+  const [modalTab, setModalTab] = useState<ModalTab>('contenido');
+  const [imagenes, setImagenes] = useState<ActaImage[]>([]);
+  const [cargandoImagenes, setCargandoImagenes] = useState(false);
+  const [subiendoImagen, setSubiendoImagen] = useState(false);
+  const [eliminandoImagenId, setEliminandoImagenId] = useState<string | null>(null);
+  const [imagenAmpliada, setImagenAmpliada] = useState<ActaImage | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const actaModalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -79,6 +101,19 @@ export default function GroupDetailPage() {
     }
   }
 
+  async function abrirDetalle(acta: Acta) {
+    setActaDetalle(acta);
+    setModalTab('contenido');
+    setImagenes([]);
+    setCargandoImagenes(true);
+    try {
+      const res = await fetch(`/api/actas/${acta.id}/images`);
+      if (res.ok) setImagenes(await res.json());
+    } finally {
+      setCargandoImagenes(false);
+    }
+  }
+
   async function guardarContexto() {
     if (!grupo) return;
     setGuardandoContexto(true);
@@ -109,19 +144,75 @@ export default function GroupDetailPage() {
     }
   }
 
+  async function subirImagen(file: File) {
+    if (!actaDetalle) return;
+    setSubiendoImagen(true);
+    try {
+      const supabase = createClient();
+      const ext = file.name.split('.').pop() ?? 'jpg';
+      const storagePath = `${actaDetalle.id}/${crypto.randomUUID()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('acta-images')
+        .upload(storagePath, file, { contentType: file.type, upsert: false });
+
+      if (uploadError) {
+        console.error('Error al subir imagen:', uploadError.message);
+        return;
+      }
+
+      const { data: { publicUrl } } = supabase.storage.from('acta-images').getPublicUrl(storagePath);
+
+      const res = await fetch(`/api/actas/${actaDetalle.id}/images`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: publicUrl, name: file.name }),
+      });
+      if (res.ok) {
+        const nueva: ActaImage = await res.json();
+        setImagenes(prev => [...prev, nueva]);
+      }
+    } finally {
+      setSubiendoImagen(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
+
+  async function eliminarImagen(imagen: ActaImage) {
+    if (!actaDetalle) return;
+    setEliminandoImagenId(imagen.id);
+    try {
+      const supabase = createClient();
+      const parsedUrl = new URL(imagen.url);
+      const storagePath = parsedUrl.pathname.replace('/storage/v1/object/public/acta-images/', '');
+      await supabase.storage.from('acta-images').remove([storagePath]);
+
+      await fetch(`/api/actas/${actaDetalle.id}/images?imageId=${imagen.id}`, { method: 'DELETE' });
+      setImagenes(prev => prev.filter(i => i.id !== imagen.id));
+      if (imagenAmpliada?.id === imagen.id) setImagenAmpliada(null);
+    } finally {
+      setEliminandoImagenId(null);
+    }
+  }
+
   function sanitizarNombre(titulo: string) {
     return titulo.trim()
       ? titulo.trim().replace(/[/\\:*?"<>|]/g, '-').replace(/\s+/g, '_')
       : `acta-${new Date().toISOString().split('T')[0]}`;
   }
 
-  async function descargarPDF(content: string, title: string, actaId?: string) {
+  async function descargarPDF(content: string, title: string, actaId?: string, imagesParam?: ActaImage[]) {
     if (actaId) setDescargandoPDFId(actaId); else setDescargandoPDFModal(true);
     try {
+      let images: ActaImage[] = imagesParam ?? [];
+      if (actaId && imagesParam === undefined) {
+        const imgRes = await fetch(`/api/actas/${actaId}/images`);
+        if (imgRes.ok) images = await imgRes.json();
+      }
       const res = await fetch('/api/pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ markdown: content }),
+        body: JSON.stringify({ markdown: content, images }),
       });
       if (!res.ok) return;
       const blob = await res.blob();
@@ -263,7 +354,7 @@ export default function GroupDetailPage() {
             <div
               key={acta.id}
               className="relative group flex items-start gap-4 p-4 rounded-xl bg-white/5 hover:bg-white/8 border border-white/10 hover:border-white/20 transition-all cursor-pointer"
-              onClick={() => setActaDetalle(acta)}
+              onClick={() => abrirDetalle(acta)}
             >
               <div className="w-9 h-9 rounded-lg bg-purple-600/20 border border-purple-400/20 flex items-center justify-center flex-shrink-0 mt-0.5">
                 <FileText size={16} className="text-purple-400" />
@@ -282,7 +373,20 @@ export default function GroupDetailPage() {
                 </div>
               </div>
 
-              <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 flex-shrink-0 transition-opacity">
+              <div className="opacity-0 group-hover:opacity-100 flex items-center gap-2 flex-shrink-0 transition-opacity">
+                <label
+                  className="flex items-center gap-1 cursor-pointer select-none text-white/35 hover:text-white/60 text-xs transition-colors"
+                  onClick={(e) => e.stopPropagation()}
+                  title="Adjuntar imágenes al exportar PDF"
+                >
+                  <input
+                    type="checkbox"
+                    checked={incluirImagenesPDF}
+                    onChange={(e) => setIncluirImagenesPDF(e.target.checked)}
+                    className="w-3 h-3 accent-purple-500 cursor-pointer"
+                  />
+                  Imgs
+                </label>
                 <button
                   onClick={(e) => { e.stopPropagation(); descargarMd(acta.content, acta.title); }}
                   className="p-1.5 rounded-lg text-white/30 hover:text-blue-400 hover:bg-blue-500/10 transition-all"
@@ -291,7 +395,7 @@ export default function GroupDetailPage() {
                   <FileDown size={15} />
                 </button>
                 <button
-                  onClick={(e) => { e.stopPropagation(); descargarPDF(acta.content, acta.title, acta.id); }}
+                  onClick={(e) => { e.stopPropagation(); descargarPDF(acta.content, acta.title, acta.id, incluirImagenesPDF ? undefined : []); }}
                   disabled={descargandoPDFId === acta.id}
                   className="p-1.5 rounded-lg text-white/30 hover:text-purple-400 hover:bg-purple-500/10 transition-all disabled:opacity-40"
                   title="Exportar PDF"
@@ -319,39 +423,197 @@ export default function GroupDetailPage() {
           className="fixed inset-0 z-[200] flex items-start justify-center bg-black/70 backdrop-blur-sm px-4 py-8 overflow-y-auto"
         >
           <div className="w-full max-w-3xl bg-[#0f0a1e] border border-white/15 rounded-2xl shadow-2xl">
+            {/* Header del modal */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
               <h2 className="text-base font-semibold text-white truncate pr-4">{actaDetalle.title}</h2>
               <div className="flex items-center gap-4 flex-shrink-0">
-                <button
-                  onClick={() => descargarMd(actaDetalle.content, actaDetalle.title)}
-                  className="text-white/40 hover:text-blue-400 text-sm transition-colors"
-                >
-                  Descargar .md
-                </button>
-                <button
-                  onClick={() => descargarPDF(actaDetalle.content, actaDetalle.title)}
-                  disabled={descargandoPDFModal}
-                  className="text-purple-400 hover:text-purple-300 text-sm transition-colors disabled:opacity-50"
-                >
-                  {descargandoPDFModal ? 'Generando…' : 'Exportar PDF'}
-                </button>
+                {modalTab === 'contenido' && (
+                  <>
+                    <button
+                      onClick={() => descargarMd(actaDetalle.content, actaDetalle.title)}
+                      className="text-white/40 hover:text-blue-400 text-sm transition-colors"
+                    >
+                      Descargar .md
+                    </button>
+                    <label className="flex items-center gap-1.5 cursor-pointer select-none text-white/40 hover:text-white/60 text-sm transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={incluirImagenesPDF}
+                        onChange={(e) => setIncluirImagenesPDF(e.target.checked)}
+                        className="w-3.5 h-3.5 accent-purple-500 cursor-pointer"
+                      />
+                      Adjuntar imágenes
+                    </label>
+                    <button
+                      onClick={() => descargarPDF(actaDetalle.content, actaDetalle.title, actaDetalle.id, incluirImagenesPDF ? imagenes : [])}
+                      disabled={descargandoPDFModal}
+                      className="text-purple-400 hover:text-purple-300 text-sm transition-colors disabled:opacity-50"
+                    >
+                      {descargandoPDFModal ? 'Generando…' : 'Exportar PDF'}
+                    </button>
+                  </>
+                )}
                 <button
                   onClick={() => setActaDetalle(null)}
-                  className="text-white/40 hover:text-white/70 text-sm transition-colors"
+                  className="text-white/40 hover:text-white/70 transition-colors"
                 >
-                  Cerrar
+                  <X size={18} />
                 </button>
               </div>
             </div>
-            <div className="p-6">
-              <article className="bg-white rounded-xl p-8 prose prose-gray max-w-none">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{actaDetalle.content}</ReactMarkdown>
-              </article>
+
+            {/* Tabs */}
+            <div className="flex border-b border-white/10 px-6">
+              <button
+                onClick={() => setModalTab('contenido')}
+                className={`flex items-center gap-1.5 py-3 pr-4 text-sm font-medium border-b-2 transition-colors ${
+                  modalTab === 'contenido'
+                    ? 'border-purple-500 text-white'
+                    : 'border-transparent text-white/40 hover:text-white/70'
+                }`}
+              >
+                <FileText size={14} />
+                Contenido
+              </button>
+              <button
+                onClick={() => setModalTab('imagenes')}
+                className={`flex items-center gap-1.5 py-3 px-4 text-sm font-medium border-b-2 transition-colors ${
+                  modalTab === 'imagenes'
+                    ? 'border-purple-500 text-white'
+                    : 'border-transparent text-white/40 hover:text-white/70'
+                }`}
+              >
+                <ImageIcon size={14} />
+                Imágenes
+                {imagenes.length > 0 && (
+                  <span className="ml-1 px-1.5 py-0.5 text-xs bg-purple-600/30 text-purple-300 rounded-full">
+                    {imagenes.length}
+                  </span>
+                )}
+              </button>
             </div>
+
+            {/* Contenido del tab */}
+            {modalTab === 'contenido' ? (
+              <div className="p-6">
+                <article className="bg-white rounded-xl p-8 prose prose-gray max-w-none">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{actaDetalle.content}</ReactMarkdown>
+                </article>
+              </div>
+            ) : (
+              <div className="p-6">
+                {/* Botón subir imagen */}
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-white/50 text-sm">
+                    {imagenes.length === 0 ? 'Sin imágenes adjuntas' : `${imagenes.length} imagen${imagenes.length !== 1 ? 'es' : ''}`}
+                  </p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) subirImagen(file);
+                    }}
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={subiendoImagen}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {subiendoImagen ? (
+                      <>
+                        <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Subiendo…
+                      </>
+                    ) : (
+                      <>
+                        <ImagePlus size={15} />
+                        Adjuntar imagen
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {cargandoImagenes ? (
+                  <div className="flex items-center justify-center py-16">
+                    <div className="w-5 h-5 border-2 border-purple-500/30 border-t-purple-400 rounded-full animate-spin" />
+                  </div>
+                ) : imagenes.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-3">
+                      <ImageIcon size={22} className="text-white/25" />
+                    </div>
+                    <p className="text-white/40 text-sm">Todavía no hay imágenes.</p>
+                    <p className="text-white/25 text-xs mt-1">Hacé clic en "Adjuntar imagen" para agregar una.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {imagenes.map((img) => (
+                      <div
+                        key={img.id}
+                        className="group relative aspect-square rounded-xl overflow-hidden bg-white/5 border border-white/10 cursor-pointer"
+                        onClick={() => setImagenAmpliada(img)}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={img.url}
+                          alt={img.name ?? 'Imagen adjunta'}
+                          className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); eliminarImagen(img); }}
+                            disabled={eliminandoImagenId === img.id}
+                            className="opacity-0 group-hover:opacity-100 p-2 rounded-lg bg-red-500/80 hover:bg-red-500 text-white transition-all disabled:opacity-40"
+                            title="Eliminar imagen"
+                          >
+                            {eliminandoImagenId === img.id
+                              ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                              : <Trash2 size={14} />
+                            }
+                          </button>
+                        </div>
+                        {img.name && (
+                          <div className="absolute bottom-0 inset-x-0 bg-black/50 px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <p className="text-white text-xs truncate">{img.name}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
+        </div>
+      )}
+
+      {/* Lightbox imagen ampliada */}
+      {imagenAmpliada && (
+        <div
+          className="fixed inset-0 z-[300] flex items-center justify-center bg-black/90 backdrop-blur-sm px-4"
+          onClick={() => setImagenAmpliada(null)}
+        >
+          <button
+            className="absolute top-4 right-4 p-2 text-white/60 hover:text-white transition-colors"
+            onClick={() => setImagenAmpliada(null)}
+          >
+            <X size={24} />
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={imagenAmpliada.url}
+            alt={imagenAmpliada.name ?? 'Imagen ampliada'}
+            className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+          {imagenAmpliada.name && (
+            <p className="absolute bottom-6 text-white/60 text-sm">{imagenAmpliada.name}</p>
+          )}
         </div>
       )}
     </div>
   );
 }
-

@@ -14,10 +14,31 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { markdown } = await request.json();
+    const { markdown, images } = await request.json();
 
     if (!markdown || typeof markdown !== 'string') {
       return NextResponse.json({ error: 'Markdown requerido' }, { status: 400 });
+    }
+
+    let finalMarkdown = markdown;
+
+    if (Array.isArray(images) && images.length > 0) {
+      const parts: string[] = ['\n\n---\n\n## Imágenes adjuntas\n'];
+      for (const img of images) {
+        if (!img.url) continue;
+        try {
+          const imgRes = await fetch(img.url);
+          if (imgRes.ok) {
+            const buffer = await imgRes.arrayBuffer();
+            const base64 = Buffer.from(buffer).toString('base64');
+            const mime = imgRes.headers.get('content-type') || 'image/jpeg';
+            parts.push(`\n![${img.name ?? 'Imagen'}](data:${mime};base64,${base64})\n`);
+          }
+        } catch {
+          // continuar si una imagen falla
+        }
+      }
+      finalMarkdown += parts.join('');
     }
 
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -28,7 +49,7 @@ export async function POST(request: NextRequest) {
     const upstream = await fetch(`${serviceUrl}/convert`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ markdown }),
+      body: JSON.stringify({ markdown: finalMarkdown }),
     });
 
     if (!upstream.ok) {
