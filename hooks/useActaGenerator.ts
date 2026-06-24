@@ -77,13 +77,14 @@ export function useActaGenerator() {
     setReemplazarRaw('');
   };
 
-  const descargarPDF = async () => {
+  const descargarPDF = async (extraMarkdown = '') => {
     setDescargandoPDF(true);
     try {
+      const contenido = extraMarkdown ? `${markdown}\n\n${extraMarkdown}` : markdown;
       const res = await fetch('/api/pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ markdown }),
+        body: JSON.stringify({ markdown: contenido }),
       });
       if (!res.ok) throw new Error('Error al generar PDF');
       const blob = await res.blob();

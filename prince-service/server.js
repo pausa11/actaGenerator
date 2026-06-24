@@ -7,7 +7,7 @@ const { randomUUID } = require('crypto');
 const { marked } = require('marked');
 
 const app = express();
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '50mb' }));
 
 const SECRET = process.env.SERVICE_SECRET;
 

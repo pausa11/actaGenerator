@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect, Suspense } from 'react';
-import { Mic, FolderOpen, Save, Check } from 'lucide-react';
+import { Mic, FolderOpen, Save, Check, ImagePlus, X } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -36,7 +36,9 @@ function GenerarContent() {
   const [guardado, setGuardado] = useState(false);
   const [errorGuardar, setErrorGuardar] = useState('');
   const [nombreGrupo, setNombreGrupo] = useState('');
+  const [imagenes, setImagenes] = useState<{ name: string; dataUrl: string }[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!groupId) return;
@@ -59,6 +61,32 @@ function GenerarContent() {
     const file = e.target.files?.[0];
     if (file) procesarArchivo(file);
   };
+
+  function onImagenesChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setImagenes(prev => [...prev, { name: file.name, dataUrl: reader.result as string }]);
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = '';
+  }
+
+  function quitarImagen(index: number) {
+    setImagenes(prev => prev.filter((_, i) => i !== index));
+  }
+
+  function buildImagenesMarkdown(): string {
+    if (imagenes.length === 0) return '';
+    const lines = ['## Adjuntos', ''];
+    imagenes.forEach((img, i) => {
+      lines.push(`![${img.name || `Imagen ${i + 1}`}](${img.dataUrl})`);
+      lines.push('');
+    });
+    return lines.join('\n');
+  }
 
   function extractTitle(md: string): string {
     const h1 = md.match(/^#\s+(.+)$/m);
@@ -218,6 +246,41 @@ function GenerarContent() {
             )}
           </div>
 
+          <div className="no-print mb-6 p-4 bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl">
+            <p className="text-sm font-medium text-white mb-3">Adjuntar imágenes al acta</p>
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={onImagenesChange}
+            />
+            <button
+              onClick={() => imageInputRef.current?.click()}
+              className="flex items-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <ImagePlus size={15} />
+              Agregar imágenes
+            </button>
+            {imagenes.length > 0 && (
+              <div className="grid grid-cols-3 gap-3 mt-3">
+                {imagenes.map((img, i) => (
+                  <div key={i} className="relative group rounded-lg overflow-hidden border border-white/20">
+                    <img src={img.dataUrl} alt={img.name} className="w-full h-24 object-cover" />
+                    <button
+                      onClick={() => quitarImagen(i)}
+                      className="absolute top-1 right-1 p-0.5 bg-black/60 hover:bg-black/80 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X size={13} />
+                    </button>
+                    <p className="px-1 py-0.5 text-xs text-white/70 truncate bg-black/40">{img.name}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="no-print flex gap-3 mb-6 flex-wrap">
             <button
               onClick={descargarMd}
@@ -226,7 +289,7 @@ function GenerarContent() {
               Descargar .md
             </button>
             <button
-              onClick={descargarPDF}
+              onClick={() => descargarPDF(buildImagenesMarkdown())}
               disabled={descargandoPDF}
               className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
