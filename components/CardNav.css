@@ -184,6 +184,29 @@
   opacity: 0.75;
 }
 
+.navbar-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.navbar-external-greeting {
+  position: absolute;
+  left: 2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.7);
+  white-space: nowrap;
+  z-index: 98;
+  pointer-events: none;
+}
+
+.navbar-external-greeting strong {
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 600;
+}
+
 @media (max-width: 768px) {
   .card-nav-container {
     width: calc(100% - 3rem);

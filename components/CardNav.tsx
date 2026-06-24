@@ -175,12 +175,6 @@ const CardNav = ({
           )}
 
           <div className="card-nav-right">
-            {greeting && (
-              <span className="card-nav-greeting">
-                Hola, <strong>{greeting}</strong>
-              </span>
-            )}
-
             {onButtonClick && (
               <button
                 type="button"

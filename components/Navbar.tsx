@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import CardNav from './CardNav';
+import './CardNav.css';
 
 const items = [
   {
@@ -68,16 +69,22 @@ export default function Navbar() {
   };
 
   return (
-    <CardNav
-      logoText="Acta Generator"
-      greeting={sesionActiva ? nombreUsuario : undefined}
-      items={items}
-      baseColor="rgba(255,255,255,0.18)"
-      menuColor="#ffffff"
-      buttonBgColor={sesionActiva ? '#7c3aed' : undefined}
-      buttonTextColor={sesionActiva ? '#ffffff' : undefined}
-      buttonLabel={sesionActiva ? 'Cerrar sesión' : undefined}
-      onButtonClick={sesionActiva ? cerrarSesion : undefined}
-    />
+    <div className="navbar-wrapper">
+      {sesionActiva && nombreUsuario && (
+        <span className="navbar-external-greeting">
+          Hola, <strong>{nombreUsuario}</strong>
+        </span>
+      )}
+      <CardNav
+        logoText="Acta Generator"
+        items={items}
+        baseColor="rgba(255,255,255,0.18)"
+        menuColor="#ffffff"
+        buttonBgColor={sesionActiva ? '#7c3aed' : undefined}
+        buttonTextColor={sesionActiva ? '#ffffff' : undefined}
+        buttonLabel={sesionActiva ? 'Cerrar sesión' : undefined}
+        onButtonClick={sesionActiva ? cerrarSesion : undefined}
+      />
+    </div>
   );
 }
