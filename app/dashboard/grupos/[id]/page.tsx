@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { ArrowLeft, Plus, Trash2, FileText, Clock, Settings2, X } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, FileText, Clock, Settings2, X, Download, FileDown } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -32,6 +32,8 @@ export default function GroupDetailPage() {
   const [actas, setActas] = useState<Acta[]>([]);
   const [cargando, setCargando] = useState(true);
   const [eliminando, setEliminando] = useState<string | null>(null);
+  const [descargandoPDFId, setDescargandoPDFId] = useState<string | null>(null);
+  const [descargandoPDFModal, setDescargandoPDFModal] = useState(false);
   const [actaDetalle, setActaDetalle] = useState<Acta | null>(null);
   const [mostrarContexto, setMostrarContexto] = useState(false);
   const [contextoEdit, setContextoEdit] = useState('');
@@ -105,6 +107,43 @@ export default function GroupDetailPage() {
     } finally {
       setEliminando(null);
     }
+  }
+
+  function sanitizarNombre(titulo: string) {
+    return titulo.trim()
+      ? titulo.trim().replace(/[/\\:*?"<>|]/g, '-').replace(/\s+/g, '_')
+      : `acta-${new Date().toISOString().split('T')[0]}`;
+  }
+
+  async function descargarPDF(content: string, title: string, actaId?: string) {
+    if (actaId) setDescargandoPDFId(actaId); else setDescargandoPDFModal(true);
+    try {
+      const res = await fetch('/api/pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ markdown: content }),
+      });
+      if (!res.ok) return;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${sanitizarNombre(title)}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      if (actaId) setDescargandoPDFId(null); else setDescargandoPDFModal(false);
+    }
+  }
+
+  function descargarMd(content: string, title: string) {
+    const blob = new Blob([content], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${sanitizarNombre(title)}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   function formatFecha(iso: string) {
@@ -243,14 +282,31 @@ export default function GroupDetailPage() {
                 </div>
               </div>
 
-              <button
-                onClick={(e) => { e.stopPropagation(); eliminarActa(acta.id); }}
-                disabled={eliminando === acta.id}
-                className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all disabled:opacity-40 flex-shrink-0"
-                title="Eliminar acta"
-              >
-                <Trash2 size={15} />
-              </button>
+              <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 flex-shrink-0 transition-opacity">
+                <button
+                  onClick={(e) => { e.stopPropagation(); descargarMd(acta.content, acta.title); }}
+                  className="p-1.5 rounded-lg text-white/30 hover:text-blue-400 hover:bg-blue-500/10 transition-all"
+                  title="Descargar .md"
+                >
+                  <FileDown size={15} />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); descargarPDF(acta.content, acta.title, acta.id); }}
+                  disabled={descargandoPDFId === acta.id}
+                  className="p-1.5 rounded-lg text-white/30 hover:text-purple-400 hover:bg-purple-500/10 transition-all disabled:opacity-40"
+                  title="Exportar PDF"
+                >
+                  <Download size={15} />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); eliminarActa(acta.id); }}
+                  disabled={eliminando === acta.id}
+                  className="p-1.5 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all disabled:opacity-40"
+                  title="Eliminar acta"
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -265,12 +321,27 @@ export default function GroupDetailPage() {
           <div className="w-full max-w-3xl bg-[#0f0a1e] border border-white/15 rounded-2xl shadow-2xl">
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
               <h2 className="text-base font-semibold text-white truncate pr-4">{actaDetalle.title}</h2>
-              <button
-                onClick={() => setActaDetalle(null)}
-                className="text-white/40 hover:text-white/70 text-sm transition-colors flex-shrink-0"
-              >
-                Cerrar
-              </button>
+              <div className="flex items-center gap-4 flex-shrink-0">
+                <button
+                  onClick={() => descargarMd(actaDetalle.content, actaDetalle.title)}
+                  className="text-white/40 hover:text-blue-400 text-sm transition-colors"
+                >
+                  Descargar .md
+                </button>
+                <button
+                  onClick={() => descargarPDF(actaDetalle.content, actaDetalle.title)}
+                  disabled={descargandoPDFModal}
+                  className="text-purple-400 hover:text-purple-300 text-sm transition-colors disabled:opacity-50"
+                >
+                  {descargandoPDFModal ? 'Generando…' : 'Exportar PDF'}
+                </button>
+                <button
+                  onClick={() => setActaDetalle(null)}
+                  className="text-white/40 hover:text-white/70 text-sm transition-colors"
+                >
+                  Cerrar
+                </button>
+              </div>
             </div>
             <div className="p-6">
               <article className="bg-white rounded-xl p-8 prose prose-gray max-w-none">
