@@ -1,11 +1,14 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect, Suspense } from 'react';
-import { Mic, FolderOpen, Save, Check, ImagePlus, X, Pencil } from 'lucide-react';
+import { Mic, FolderOpen, Save, Check, ImagePlus, X, Pencil, FileText, Eye, Edit3 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useActaGenerator } from '@/hooks/useActaGenerator';
+
+type Modo = 'audio' | 'texto';
+type SubModoTexto = 'archivo' | 'pegar';
 
 function GenerarContent() {
   const router = useRouter();
@@ -15,8 +18,10 @@ function GenerarContent() {
   const {
     estado,
     markdown,
+    setMarkdown,
     error,
     archivo,
+    archivoTexto,
     buscar,
     setBuscar,
     reemplazar,
@@ -25,12 +30,17 @@ function GenerarContent() {
     descargandoPDF,
     modeloUsado,
     procesarArchivo,
+    procesarArchivoTexto,
     generarActa,
+    generarActaDesdeTexto,
     aplicarCorrecion,
     descargarPDF,
     descargarMd,
   } = useActaGenerator();
 
+  const [modo, setModo] = useState<Modo>('audio');
+  const [subModoTexto, setSubModoTexto] = useState<SubModoTexto>('pegar');
+  const [textoPegado, setTextoPegado] = useState('');
   const [arrastrando, setArrastrando] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [guardado, setGuardado] = useState(false);
@@ -38,7 +48,9 @@ function GenerarContent() {
   const [nombreGrupo, setNombreGrupo] = useState('');
   const [titulo, setTitulo] = useState('');
   const [imagenes, setImagenes] = useState<{ name: string; dataUrl: string }[]>([]);
+  const [modoVista, setModoVista] = useState<'preview' | 'editar'>('preview');
   const inputRef = useRef<HTMLInputElement>(null);
+  const inputTextoRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -62,8 +74,10 @@ function GenerarContent() {
     e.preventDefault();
     setArrastrando(false);
     const file = e.dataTransfer.files[0];
-    if (file) procesarArchivo(file);
-  }, [procesarArchivo]);
+    if (!file) return;
+    if (modo === 'texto') procesarArchivoTexto(file);
+    else procesarArchivo(file);
+  }, [modo, procesarArchivo, procesarArchivoTexto]);
 
   const onDragOver = (e: React.DragEvent) => { e.preventDefault(); setArrastrando(true); };
   const onDragLeave = () => setArrastrando(false);
@@ -71,6 +85,19 @@ function GenerarContent() {
     const file = e.target.files?.[0];
     if (file) procesarArchivo(file);
   };
+  const onFileTextoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) procesarArchivoTexto(file);
+  };
+
+  async function handleGenerarTexto() {
+    if (subModoTexto === 'pegar') {
+      await generarActaDesdeTexto(textoPegado, groupId);
+    } else if (archivoTexto) {
+      const texto = await archivoTexto.text();
+      await generarActaDesdeTexto(texto, groupId);
+    }
+  }
 
   function onImagenesChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
@@ -140,44 +167,145 @@ function GenerarContent() {
           </div>
         )}
 
-        <p className="mb-8 font-medium text-white">Sube el audio de tu reunión y obtén el acta en segundos.</p>
+        <p className="mb-6 font-medium text-white">Sube el audio de tu reunión y obtén el acta en segundos.</p>
 
-        <div
-          className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-colors backdrop-blur-xl ${
-            arrastrando
-              ? 'border-purple-400/70 bg-purple-500/20'
-              : archivo
-              ? 'border-green-400/70 bg-green-500/15'
-              : 'border-white/40 hover:border-white/60 bg-white/15'
-          }`}
-          onDrop={onDrop}
-          onDragOver={onDragOver}
-          onDragLeave={onDragLeave}
-          onClick={() => inputRef.current?.click()}
-        >
-          <input
-            ref={inputRef}
-            type="file"
-            accept="audio/*"
-            className="hidden"
-            onChange={onFileChange}
-          />
-          {archivo ? (
-            <div>
-              <Mic className="mx-auto mb-2 text-white/70" size={28} />
-              <p className="font-medium text-white">{archivo.name}</p>
-              <p className="text-sm text-white/70 mt-1">
-                {(archivo.size / 1024 / 1024).toFixed(1)} MB — haz clic para cambiar
-              </p>
-            </div>
-          ) : (
-            <div>
-              <FolderOpen className="mx-auto mb-2 text-white/70" size={28} />
-              <p className="text-white font-medium">Arrastra tu audio aquí</p>
-              <p className="text-sm text-white/60 mt-1">o haz clic para seleccionar — mp3, m4a, wav, ogg</p>
-            </div>
-          )}
+        {/* Selector de modo */}
+        <div className="flex gap-2 mb-6 p-1 bg-white/10 rounded-xl w-fit">
+          <button
+            onClick={() => setModo('audio')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              modo === 'audio'
+                ? 'bg-purple-600 text-white shadow'
+                : 'text-white/60 hover:text-white/80'
+            }`}
+          >
+            <Mic size={15} />
+            Desde audio
+          </button>
+          <button
+            onClick={() => setModo('texto')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              modo === 'texto'
+                ? 'bg-purple-600 text-white shadow'
+                : 'text-white/60 hover:text-white/80'
+            }`}
+          >
+            <FileText size={15} />
+            Desde transcripción
+          </button>
         </div>
+
+        {modo === 'audio' ? (
+          <div
+            className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-colors backdrop-blur-xl ${
+              arrastrando
+                ? 'border-purple-400/70 bg-purple-500/20'
+                : archivo
+                ? 'border-green-400/70 bg-green-500/15'
+                : 'border-white/40 hover:border-white/60 bg-white/15'
+            }`}
+            onDrop={onDrop}
+            onDragOver={onDragOver}
+            onDragLeave={onDragLeave}
+            onClick={() => inputRef.current?.click()}
+          >
+            <input
+              ref={inputRef}
+              type="file"
+              accept="audio/*"
+              className="hidden"
+              onChange={onFileChange}
+            />
+            {archivo ? (
+              <div>
+                <Mic className="mx-auto mb-2 text-white/70" size={28} />
+                <p className="font-medium text-white">{archivo.name}</p>
+                <p className="text-sm text-white/70 mt-1">
+                  {(archivo.size / 1024 / 1024).toFixed(1)} MB — haz clic para cambiar
+                </p>
+              </div>
+            ) : (
+              <div>
+                <FolderOpen className="mx-auto mb-2 text-white/70" size={28} />
+                <p className="text-white font-medium">Arrastra tu audio aquí</p>
+                <p className="text-sm text-white/60 mt-1">o haz clic para seleccionar — mp3, m4a, wav, ogg</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div>
+            {/* Sub-tabs archivo / pegar */}
+            <div className="flex gap-1 mb-4 border-b border-white/15">
+              <button
+                onClick={() => setSubModoTexto('pegar')}
+                className={`px-3 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+                  subModoTexto === 'pegar'
+                    ? 'border-purple-400 text-white'
+                    : 'border-transparent text-white/50 hover:text-white/70'
+                }`}
+              >
+                Pegar texto
+              </button>
+              <button
+                onClick={() => setSubModoTexto('archivo')}
+                className={`px-3 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+                  subModoTexto === 'archivo'
+                    ? 'border-purple-400 text-white'
+                    : 'border-transparent text-white/50 hover:text-white/70'
+                }`}
+              >
+                Subir archivo .txt / .md
+              </button>
+            </div>
+
+            {subModoTexto === 'pegar' ? (
+              <textarea
+                value={textoPegado}
+                onChange={(e) => setTextoPegado(e.target.value)}
+                placeholder="Pegá aquí la transcripción de la reunión…"
+                rows={10}
+                className="w-full px-4 py-3 text-sm bg-white/10 backdrop-blur-xl border border-white/25 text-white placeholder-white/35 rounded-xl resize-y focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            ) : (
+              <div
+                className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-colors backdrop-blur-xl ${
+                  arrastrando
+                    ? 'border-purple-400/70 bg-purple-500/20'
+                    : archivoTexto
+                    ? 'border-green-400/70 bg-green-500/15'
+                    : 'border-white/40 hover:border-white/60 bg-white/15'
+                }`}
+                onDrop={onDrop}
+                onDragOver={onDragOver}
+                onDragLeave={onDragLeave}
+                onClick={() => inputTextoRef.current?.click()}
+              >
+                <input
+                  ref={inputTextoRef}
+                  type="file"
+                  accept=".txt,.md,text/plain,text/markdown"
+                  className="hidden"
+                  onChange={onFileTextoChange}
+                />
+                {archivoTexto ? (
+                  <div>
+                    <FileText className="mx-auto mb-2 text-white/70" size={28} />
+                    <p className="font-medium text-white">{archivoTexto.name}</p>
+                    <p className="text-sm text-white/70 mt-1">
+                      {(archivoTexto.size / 1024).toFixed(1)} KB — haz clic para cambiar
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <FolderOpen className="mx-auto mb-2 text-white/70" size={28} />
+                    <p className="text-white font-medium">Arrastra tu transcripción aquí</p>
+                    <p className="text-sm text-white/60 mt-1">o haz clic para seleccionar — .txt o .md</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {estado === 'error' && (
           <div className="mt-4 p-4 bg-red-500/15 backdrop-blur-xl border border-red-400/30 rounded-lg text-red-700 text-sm">
@@ -186,8 +314,13 @@ function GenerarContent() {
         )}
 
         <button
-          onClick={() => generarActa(groupId)}
-          disabled={!archivo || estado === 'cargando'}
+          onClick={() => modo === 'audio' ? generarActa(groupId) : handleGenerarTexto()}
+          disabled={
+            estado === 'cargando' ||
+            (modo === 'audio' && !archivo) ||
+            (modo === 'texto' && subModoTexto === 'pegar' && !textoPegado.trim()) ||
+            (modo === 'texto' && subModoTexto === 'archivo' && !archivoTexto)
+          }
           className="mt-6 w-full py-3 px-6 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {estado === 'cargando' ? (
@@ -196,7 +329,7 @@ function GenerarContent() {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
               </svg>
-              Procesando audio con Gemini…
+              {modo === 'audio' ? 'Procesando audio con Gemini…' : 'Generando acta desde transcripción…'}
             </span>
           ) : (
             'Generar acta'
@@ -209,12 +342,14 @@ function GenerarContent() {
           </p>
         )}
 
-        <div className="mt-4 flex items-start gap-2 p-3 bg-amber-400/10 border border-amber-400/30 rounded-lg">
-          <span className="text-amber-400 text-sm mt-px">⚠</span>
-          <p className="text-xs text-amber-200/80">
-            La calidad del acta depende directamente de la calidad del audio. Grabaciones con ruido de fondo, voces superpuestas o baja claridad pueden afectar el resultado.
-          </p>
-        </div>
+        {modo === 'audio' && (
+          <div className="mt-4 flex items-start gap-2 p-3 bg-amber-400/10 border border-amber-400/30 rounded-lg">
+            <span className="text-amber-400 text-sm mt-px">⚠</span>
+            <p className="text-xs text-amber-200/80">
+              La calidad del acta depende directamente de la calidad del audio. Grabaciones con ruido de fondo, voces superpuestas o baja claridad pueden afectar el resultado.
+            </p>
+          </div>
+        )}
       </div>
 
       {estado === 'listo' && markdown && (
@@ -340,9 +475,43 @@ function GenerarContent() {
             </p>
           )}
 
-          <article className="bg-white rounded-xl border border-white/20 p-10 prose prose-gray max-w-none">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>
-          </article>
+          <div className="no-print flex gap-1 mb-3 p-1 bg-white/10 rounded-xl w-fit">
+            <button
+              onClick={() => setModoVista('preview')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                modoVista === 'preview'
+                  ? 'bg-purple-600 text-white shadow'
+                  : 'text-white/60 hover:text-white/80'
+              }`}
+            >
+              <Eye size={14} />
+              Vista previa
+            </button>
+            <button
+              onClick={() => setModoVista('editar')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                modoVista === 'editar'
+                  ? 'bg-purple-600 text-white shadow'
+                  : 'text-white/60 hover:text-white/80'
+              }`}
+            >
+              <Edit3 size={14} />
+              Editar
+            </button>
+          </div>
+
+          {modoVista === 'editar' ? (
+            <textarea
+              value={markdown}
+              onChange={(e) => setMarkdown(e.target.value)}
+              className="w-full min-h-[600px] px-5 py-4 text-sm font-mono bg-white text-gray-800 border border-white/20 rounded-xl resize-y focus:outline-none focus:ring-2 focus:ring-purple-500"
+              spellCheck={false}
+            />
+          ) : (
+            <article className="bg-white rounded-xl border border-white/20 p-10 prose prose-gray max-w-none">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>
+            </article>
+          )}
         </div>
       )}
     </div>

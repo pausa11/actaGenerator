@@ -69,4 +69,32 @@ ${groupContext.trim()}
 Tenés en cuenta este contexto al redactar el acta: usalo para entender mejor los temas, los participantes, la jerga o el estilo esperado en este grupo.`;
 }
 
+const ACTA_PROMPT_TEXTO_BASE = ACTA_PROMPT_BASE.replace(
+  'Escucha el audio de esta reunión y genera un acta formal y completa en español, en formato Markdown.',
+  'Lee la siguiente transcripción de una reunión y genera un acta formal y completa en español, en formato Markdown.'
+).replace(
+  '*Acta generada automáticamente a partir del audio de la reunión.*',
+  '*Acta generada automáticamente a partir de la transcripción de la reunión.*'
+).replace(
+  '- No inventes información que no esté en el audio.',
+  '- No inventes información que no esté en la transcripción.'
+);
+
+export function buildActaPromptDesdeTexto(transcripcion: string, groupContext?: string | null): string {
+  const base = `${ACTA_PROMPT_TEXTO_BASE}
+
+## Transcripción
+
+${transcripcion}`;
+
+  if (!groupContext?.trim()) return base;
+  return `${base}
+
+## Contexto específico del grupo
+
+${groupContext.trim()}
+
+Tenés en cuenta este contexto al redactar el acta: usalo para entender mejor los temas, los participantes, la jerga o el estilo esperado en este grupo.`;
+}
+
 export const ACTA_PROMPT = ACTA_PROMPT_BASE;

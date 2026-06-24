@@ -9,6 +9,7 @@ export function useActaGenerator() {
   const [markdown, setMarkdown] = useState('');
   const [error, setError] = useState('');
   const [archivo, setArchivo] = useState<File | null>(null);
+  const [archivoTexto, setArchivoTexto] = useState<File | null>(null);
   const [buscar, setBuscarRaw] = useState('');
   const [reemplazar, setReemplazarRaw] = useState('');
   const [ultimoReemplazo, setUltimoReemplazo] = useState<number | null>(null);
@@ -37,6 +38,23 @@ export function useActaGenerator() {
     setMarkdown('');
   }, []);
 
+  const procesarArchivoTexto = useCallback((file: File) => {
+    const esTexto =
+      file.type === 'text/plain' ||
+      file.type === 'text/markdown' ||
+      file.name.endsWith('.txt') ||
+      file.name.endsWith('.md');
+    if (!esTexto) {
+      setError('El archivo debe ser un archivo de texto (.txt o .md)');
+      setEstado('error');
+      return;
+    }
+    setArchivoTexto(file);
+    setEstado('idle');
+    setError('');
+    setMarkdown('');
+  }, []);
+
   const generarActa = async (groupId?: string | null) => {
     if (!archivo) return;
 
@@ -51,6 +69,33 @@ export function useActaGenerator() {
       if (groupId) form.append('groupId', groupId);
 
       const res = await fetch('/api/generate', { method: 'POST', body: form });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || 'Error al generar el acta');
+
+      setMarkdown(data.markdown);
+      setModeloUsado(data.model ?? '');
+      setEstado('listo');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error desconocido');
+      setEstado('error');
+    }
+  };
+
+  const generarActaDesdeTexto = async (transcripcion: string, groupId?: string | null) => {
+    if (!transcripcion.trim()) return;
+
+    setEstado('cargando');
+    setError('');
+    setMarkdown('');
+    setModeloUsado('');
+
+    try {
+      const res = await fetch('/api/generate-from-text', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transcripcion, groupId: groupId ?? undefined }),
+      });
       const data = await res.json();
 
       if (!res.ok) throw new Error(data.error || 'Error al generar el acta');
@@ -121,8 +166,10 @@ export function useActaGenerator() {
   return {
     estado,
     markdown,
+    setMarkdown,
     error,
     archivo,
+    archivoTexto,
     buscar,
     setBuscar,
     reemplazar,
@@ -131,7 +178,9 @@ export function useActaGenerator() {
     descargandoPDF,
     modeloUsado,
     procesarArchivo,
+    procesarArchivoTexto,
     generarActa,
+    generarActaDesdeTexto,
     aplicarCorrecion,
     descargarPDF,
     descargarMd,
