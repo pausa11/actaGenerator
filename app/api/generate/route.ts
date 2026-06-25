@@ -11,6 +11,8 @@ import { db } from '@/lib/db';
 import { groups, users } from '@/lib/db/schema';
 import { and, eq } from 'drizzle-orm';
 
+export const maxDuration = 300;
+
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -25,14 +27,18 @@ export async function POST(request: NextRequest) {
 
   let tempPath: string | null = null;
   let uploadedFileName: string | null = null;
+  let audioPath: string | null = null;
 
   try {
     const formData = await request.formData();
-    const audioFile = formData.get('audio') as File | null;
+    const audioUrl = formData.get('audioUrl') as string | null;
+    audioPath = formData.get('audioPath') as string | null;
+    const audioName = formData.get('audioName') as string | null;
+    const audioType = formData.get('audioType') as string | null;
     const groupId = formData.get('groupId') as string | null;
 
-    if (!audioFile) {
-      return NextResponse.json({ error: 'No se recibió archivo de audio' }, { status: 400 });
+    if (!audioUrl) {
+      return NextResponse.json({ error: 'No se recibió URL del audio' }, { status: 400 });
     }
 
     let groupContext: string | null = null;
@@ -47,15 +53,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const extension = audioFile.name.split('.').pop() ?? 'mp3';
+    const audioResponse = await fetch(audioUrl);
+    if (!audioResponse.ok) throw new Error('Error descargando el audio desde el almacenamiento');
+    const extension = (audioName ?? 'audio').split('.').pop() ?? 'mp3';
     tempPath = join(tmpdir(), `acta-${randomUUID()}.${extension}`);
-    const buffer = Buffer.from(await audioFile.arrayBuffer());
+    const buffer = Buffer.from(await audioResponse.arrayBuffer());
     await writeFile(tempPath, buffer);
 
     const fileManager = new GoogleAIFileManager(apiKey);
     const uploadResult = await fileManager.uploadFile(tempPath, {
-      mimeType: audioFile.type || 'audio/mpeg',
-      displayName: audioFile.name,
+      mimeType: audioType || 'audio/mpeg',
+      displayName: audioName ?? 'audio',
     });
     uploadedFileName = uploadResult.file.name;
 
@@ -130,6 +138,10 @@ export async function POST(request: NextRequest) {
     if (uploadedFileName) {
       const fileManager = new GoogleAIFileManager(process.env.GEMINI_API_KEY!);
       await fileManager.deleteFile(uploadedFileName).catch(() => {});
+    }
+    if (audioPath) {
+      const supabase = await createClient();
+      await supabase.storage.from('audio-uploads').remove([audioPath]).catch(() => {});
     }
   }
 }
