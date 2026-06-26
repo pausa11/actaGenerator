@@ -4,8 +4,6 @@ import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
 import LightPillarBackground from "@/components/LightPillarBackground";
 import Navbar from "@/components/Navbar";
-import LenisProvider from "@/components/LenisProvider";
-
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
@@ -16,14 +14,16 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" className={cn("font-sans", geist.variable)}>
-      <body className="h-screen bg-black flex flex-col">
+      <body className="min-h-screen bg-black flex flex-col">
         <div className="fixed inset-0 -z-10">
           <LightPillarBackground />
         </div>
-        <Navbar />
-        <LenisProvider>
+        <div className="sticky top-0 z-50">
+          <Navbar />
+        </div>
+        <main className="flex-1">
           {children}
-        </LenisProvider>
+        </main>
       </body>
     </html>
   );
