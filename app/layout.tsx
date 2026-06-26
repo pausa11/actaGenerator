@@ -9,9 +9,17 @@ const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 export const metadata: Metadata = {
   title: 'Acta Pro',
   description: 'Genera actas de reunión a partir de audio',
+  manifest: '/manifest.json',
   icons: {
-    icon: '/actaProLogo.png',
-    apple: '/actaProLogo.png',
+    icon: [
+      { url: '/favicon.ico', sizes: '48x48', type: 'image/x-icon' },
+      { url: '/favicon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/favicon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/favicon-192.png', sizes: '180x180', type: 'image/png' },
+    ],
+    shortcut: '/favicon.ico',
   },
 };
 
