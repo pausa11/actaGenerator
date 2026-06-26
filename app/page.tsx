@@ -10,23 +10,23 @@ const pasos = [
   {
     Icono: Mic,
     numero: '01',
-    titulo: 'Grabá el audio',
+    titulo: 'Graba el audio',
     descripcion:
-      'Usá cualquier grabadora o app de voz en tu teléfono o computadora. Sin equipos especiales ni preparación.',
+      'Usa cualquier grabadora o app de voz en tu teléfono o computadora. Sin equipos especiales ni preparación.',
   },
   {
     Icono: Zap,
     numero: '02',
     titulo: 'La IA lo procesa',
     descripcion:
-      'Subís el archivo y nuestra IA transcribe, analiza y estructura toda la reunión en segundos.',
+      'Sube el archivo y nuestra IA transcribe, analiza y estructura toda la reunión en segundos.',
   },
   {
     Icono: FileDown,
     numero: '03',
-    titulo: 'Descargá el acta',
+    titulo: 'Descarga el acta',
     descripcion:
-      'Obtenés un PDF profesional, listo para revisar, firmar y archivar. Sin editar una sola línea.',
+      'Obtienes un PDF profesional, listo para revisar, firmar y archivar. Sin editar una sola línea.',
   },
 ];
 
@@ -117,7 +117,7 @@ export default function Landing() {
         </h1>
 
         <p className="mt-6 text-xl text-white/60 max-w-2xl">
-          Solo grabá el audio. En segundos tenés tu acta en PDF, estructurada y lista para firmar.
+          Solo graba el audio. En segundos tenés tu acta en PDF, estructurada y lista para firmar.
         </p>
 
         <Link
@@ -174,7 +174,7 @@ export default function Landing() {
             ))}
           </div>
           <p className="text-white/30 text-xs mt-6">
-            Grabás con el teléfono, la computadora, Teams, Zoom — cualquier fuente sirve.
+            Graba con el teléfono, la computadora, Teams, Zoom. Cualquier fuente sirve.
           </p>
         </div>
       </section>
@@ -219,7 +219,7 @@ export default function Landing() {
       <section className="px-6 py-20 text-center">
         <SplitText tag="h2" text="¿Listo para empezar?" className="text-4xl font-bold text-white mb-4" textAlign="center" />
         <p className="text-white/50 mb-8 text-lg">
-          Subí tu próximo audio y obtené el acta en segundos.
+          Sube tu próximo audio y obten el acta en segundos.
         </p>
         <Link
           href="/generar"
