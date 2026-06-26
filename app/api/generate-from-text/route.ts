@@ -10,6 +10,21 @@ import { checkRateLimit } from '@/lib/rate-limit';
 import { groups } from '@/lib/db/schema';
 import { and, eq } from 'drizzle-orm';
 
+const MODELS = [
+  'gemini-2.5-flash',
+  'gemini-2.5-flash-lite',
+];
+
+const isRateLimit = (err: unknown) => {
+  const msg = err instanceof Error ? err.message : String(err);
+  return msg.includes('429') || /quota|rate.?limit/i.test(msg);
+};
+
+const isOverloaded = (err: unknown) => {
+  const msg = err instanceof Error ? err.message : String(err);
+  return msg.includes('503') || /service.?unavailable|high.?demand|overloaded/i.test(msg);
+};
+
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -51,62 +66,51 @@ export async function POST(request: NextRequest) {
     }
 
     const prompt = buildActaPromptDesdeTexto(transcripcion, groupContext);
-
-    const MODELS = [
-      'gemini-3.5-flash',
-      'gemini-3.1-flash-lite',
-      'gemini-3-flash-preview',
-      'gemini-2.5-flash',
-      'gemini-2.5-flash-lite',
-    ];
-
-    const isRateLimit = (err: unknown) => {
-      const msg = err instanceof Error ? err.message : String(err);
-      return msg.includes('429') || /quota|rate.?limit/i.test(msg);
-    };
-
-    const isOverloaded = (err: unknown) => {
-      const msg = err instanceof Error ? err.message : String(err);
-      return msg.includes('503') || /service.?unavailable|high.?demand|overloaded/i.test(msg);
-    };
-
     const genAI = new GoogleGenerativeAI(apiKey);
-    let markdown = '';
-    let lastError: Error | null = null;
-    let usedModel = '';
 
     for (const modelName of MODELS) {
-      lastError = null;
       const model = genAI.getGenerativeModel({ model: modelName });
-      const maxAttempts = 2;
 
-      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      for (let attempt = 1; attempt <= 2; attempt++) {
         try {
-          const result = await model.generateContent(prompt);
-          markdown = result.response.text();
-          usedModel = modelName;
-          break;
+          const streamResult = await model.generateContentStream(prompt);
+
+          const encoder = new TextEncoder();
+          const readable = new ReadableStream({
+            async start(controller) {
+              try {
+                for await (const chunk of streamResult.stream) {
+                  const text = chunk.text();
+                  if (text) controller.enqueue(encoder.encode(text));
+                }
+              } finally {
+                controller.close();
+              }
+            },
+          });
+
+          return new Response(readable, {
+            headers: {
+              'Content-Type': 'text/plain; charset=utf-8',
+              'X-Acta-Model': modelName,
+            },
+          });
         } catch (err) {
-          lastError = err instanceof Error ? err : new Error(String(err));
           if (isRateLimit(err)) {
-            console.warn(`[${modelName}] Límite de cuota alcanzado, probando siguiente modelo...`);
+            console.warn(`[${modelName}] Cuota alcanzada, probando siguiente modelo...`);
             break;
           }
-          if (isOverloaded(err) && attempt < maxAttempts) {
+          if (isOverloaded(err) && attempt < 2) {
             await new Promise(res => setTimeout(res, attempt * 3000));
             continue;
           }
-          console.warn(`[${modelName}] Error: ${lastError.message}, probando siguiente modelo...`);
+          console.warn(`[${modelName}] Error: ${err instanceof Error ? err.message : err}`);
           break;
         }
       }
-
-      if (!lastError) break;
     }
 
-    if (lastError) throw lastError;
-
-    return NextResponse.json({ markdown, model: usedModel });
+    return NextResponse.json({ error: 'No se pudo generar el acta con ningún modelo disponible.' }, { status: 503 });
   } catch (error) {
     console.error('Error generando acta desde texto:', error);
     const message = error instanceof Error ? error.message : 'Error desconocido';

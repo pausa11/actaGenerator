@@ -15,6 +15,21 @@ import { and, eq } from 'drizzle-orm';
 
 export const maxDuration = 300;
 
+const MODELS = [
+  'gemini-2.5-flash',
+  'gemini-2.5-flash-lite',
+];
+
+const isRateLimit = (err: unknown) => {
+  const msg = err instanceof Error ? err.message : String(err);
+  return msg.includes('429') || /quota|rate.?limit/i.test(msg);
+};
+
+const isOverloaded = (err: unknown) => {
+  const msg = err instanceof Error ? err.message : String(err);
+  return msg.includes('503') || /service.?unavailable|high.?demand|overloaded/i.test(msg);
+};
+
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -36,9 +51,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'API key no configurada' }, { status: 500 });
   }
 
+  const fileManager = new GoogleAIFileManager(apiKey);
   let tempPath: string | null = null;
   let uploadedFileName: string | null = null;
   let audioPath: string | null = null;
+
+  async function cleanup() {
+    if (tempPath) await unlink(tempPath!).catch(() => {});
+    if (uploadedFileName) await fileManager.deleteFile(uploadedFileName!).catch(() => {});
+    if (audioPath) await supabase.storage.from('audio-uploads').remove([audioPath!]).catch(() => {});
+  }
 
   try {
     const formData = await request.formData();
@@ -71,7 +93,6 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(await audioResponse.arrayBuffer());
     await writeFile(tempPath, buffer);
 
-    const fileManager = new GoogleAIFileManager(apiKey);
     const uploadResult = await fileManager.uploadFile(tempPath, {
       mimeType: audioType || 'audio/mpeg',
       displayName: audioName ?? 'audio',
@@ -84,71 +105,56 @@ export async function POST(request: NextRequest) {
       { text: buildActaPrompt(groupContext) },
     ];
 
-    // Ordenados de mejor a peor calidad; todos soportan audio via Files API
-    // Excluye gemini-2.0-flash (cuota 0/0 en esta cuenta)
-    const MODELS = [
-      'gemini-2.5-flash',          // Mejor calidad disponible — probado y estable
-      'gemini-2.5-flash-lite',     // Cuota más alta — último recurso
-    ];
-
-    const isRateLimit = (err: unknown) => {
-      const msg = err instanceof Error ? err.message : String(err);
-      return msg.includes('429') || /quota|rate.?limit/i.test(msg);
-    };
-
-    const isOverloaded = (err: unknown) => {
-      const msg = err instanceof Error ? err.message : String(err);
-      return msg.includes('503') || /service.?unavailable|high.?demand|overloaded/i.test(msg);
-    };
-
-    let markdown = '';
-    let lastError: Error | null = null;
-    let usedModel = '';
-
+    // Try each model in order; commit to streaming once one accepts the request
     for (const modelName of MODELS) {
-      lastError = null;
       const model = genAI.getGenerativeModel({ model: modelName });
-      const maxAttempts = 2;
 
-      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      for (let attempt = 1; attempt <= 2; attempt++) {
         try {
-          const result = await model.generateContent(modelParts);
-          markdown = result.response.text();
-          usedModel = modelName;
-          break;
+          const streamResult = await model.generateContentStream(modelParts);
+
+          const encoder = new TextEncoder();
+          const readable = new ReadableStream({
+            async start(controller) {
+              try {
+                for await (const chunk of streamResult.stream) {
+                  const text = chunk.text();
+                  if (text) controller.enqueue(encoder.encode(text));
+                }
+              } finally {
+                controller.close();
+                await cleanup();
+              }
+            },
+          });
+
+          return new Response(readable, {
+            headers: {
+              'Content-Type': 'text/plain; charset=utf-8',
+              'X-Acta-Model': modelName,
+            },
+          });
         } catch (err) {
-          lastError = err instanceof Error ? err : new Error(String(err));
           if (isRateLimit(err)) {
-            console.warn(`[${modelName}] Límite de cuota alcanzado, probando siguiente modelo...`);
+            console.warn(`[${modelName}] Cuota alcanzada, probando siguiente modelo...`);
             break;
           }
-          if (isOverloaded(err) && attempt < maxAttempts) {
+          if (isOverloaded(err) && attempt < 2) {
             await new Promise(res => setTimeout(res, attempt * 3000));
             continue;
           }
-          console.warn(`[${modelName}] Error: ${lastError.message}, probando siguiente modelo...`);
+          console.warn(`[${modelName}] Error: ${err instanceof Error ? err.message : err}`);
           break;
         }
       }
-
-      if (!lastError) break;
     }
 
-    if (lastError) throw lastError;
-
-    return NextResponse.json({ markdown, model: usedModel });
+    await cleanup();
+    return NextResponse.json({ error: 'No se pudo generar el acta con ningún modelo disponible.' }, { status: 503 });
   } catch (error) {
+    await cleanup();
     console.error('Error generando acta:', error);
     const message = error instanceof Error ? error.message : 'Error desconocido';
     return NextResponse.json({ error: message }, { status: 500 });
-  } finally {
-    if (tempPath) await unlink(tempPath).catch(() => {});
-    if (uploadedFileName) {
-      const fileManager = new GoogleAIFileManager(process.env.GEMINI_API_KEY!);
-      await fileManager.deleteFile(uploadedFileName).catch(() => {});
-    }
-    if (audioPath) {
-      await supabase.storage.from('audio-uploads').remove([audioPath]).catch(() => {});
-    }
   }
 }

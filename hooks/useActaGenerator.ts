@@ -33,6 +33,23 @@ async function comprimirAudio(file: File): Promise<File> {
   return new File([uint8], 'audio-comprimido.mp3', { type: 'audio/mpeg' });
 }
 
+async function consumirStream(
+  res: Response,
+  onChunk: (accumulated: string) => void,
+): Promise<{ model: string }> {
+  const model = res.headers.get('X-Acta-Model') ?? '';
+  const reader = res.body!.getReader();
+  const decoder = new TextDecoder();
+  let full = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    full += decoder.decode(value, { stream: !done });
+    onChunk(full);
+  }
+  return { model };
+}
+
 export type Estado = 'idle' | 'cargando' | 'listo' | 'error';
 
 export function useActaGenerator() {
@@ -134,18 +151,19 @@ export function useActaGenerator() {
 
       const res = await fetch('/api/generate', { method: 'POST', body: form });
 
-      let data: { error?: string; markdown?: string; model?: string };
-      try {
-        data = await res.json();
-      } catch {
-        const text = await res.text().catch(() => '');
-        throw new Error(text || `Error del servidor (${res.status})`);
+      if (!res.ok) {
+        let errMsg: string;
+        try {
+          const data = await res.json();
+          errMsg = data.error || `Error del servidor (${res.status})`;
+        } catch {
+          errMsg = `Error del servidor (${res.status})`;
+        }
+        throw new Error(errMsg);
       }
 
-      if (!res.ok) throw new Error(data.error || 'Error al generar el acta');
-
-      setMarkdown(data.markdown ?? '');
-      setModeloUsado(data.model ?? '');
+      const { model } = await consumirStream(res, setMarkdown);
+      setModeloUsado(model);
       setEstado('listo');
     } catch (err) {
       setComprimiendo(false);
@@ -172,12 +190,14 @@ export function useActaGenerator() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ transcripcion, groupId: groupId ?? undefined }),
       });
-      const data = await res.json();
 
-      if (!res.ok) throw new Error(data.error || 'Error al generar el acta');
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: `Error del servidor (${res.status})` }));
+        throw new Error(data.error || 'Error al generar el acta');
+      }
 
-      setMarkdown(data.markdown);
-      setModeloUsado(data.model ?? '');
+      const { model } = await consumirStream(res, setMarkdown);
+      setModeloUsado(model);
       setEstado('listo');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');

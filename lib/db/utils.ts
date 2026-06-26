@@ -27,12 +27,19 @@ export async function getOrCreateDbUser(supabaseUser: {
   const email = supabaseUser.email ?? `${supabaseUser.id}@unknown.local`;
   const name = supabaseUser.user_metadata?.full_name ?? null;
 
-  const [user] = await db
+  // onConflictDoNothing avoids a write on every request for existing users
+  const [inserted] = await db
     .insert(users)
     .values({ supabaseId: supabaseUser.id, email, name })
-    .onConflictDoUpdate({ target: users.supabaseId, set: { email } })
+    .onConflictDoNothing()
     .returning();
 
-  userCache.set(supabaseUser.id, { user, expiresAt: Date.now() + CACHE_TTL_MS });
-  return user;
+  if (inserted) {
+    userCache.set(supabaseUser.id, { user: inserted, expiresAt: Date.now() + CACHE_TTL_MS });
+    return inserted;
+  }
+
+  const [existing] = await db.select().from(users).where(eq(users.supabaseId, supabaseUser.id));
+  userCache.set(supabaseUser.id, { user: existing, expiresAt: Date.now() + CACHE_TTL_MS });
+  return existing!;
 }

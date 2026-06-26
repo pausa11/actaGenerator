@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { and, eq, desc } from 'drizzle-orm';
 import { createClient } from '@/lib/supabase/server';
 import { db } from '@/lib/db';
-import { getOrCreateDbUser } from '@/lib/db/utils';
+import { getDbUser, getOrCreateDbUser } from '@/lib/db/utils';
 import { actas, groups } from '@/lib/db/schema';
 
 export async function GET(request: NextRequest) {
@@ -10,7 +10,9 @@ export async function GET(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
 
-  const dbUser = await getOrCreateDbUser(user);
+  const dbUser = await getDbUser(user.id);
+  if (!dbUser) return NextResponse.json([], { status: 200 });
+
   const { searchParams } = request.nextUrl;
   const groupId = searchParams.get('groupId');
   const limit = Math.min(Number(searchParams.get('limit') ?? 50), 100);

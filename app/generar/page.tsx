@@ -213,7 +213,7 @@ function GenerarContent() {
             <input
               ref={inputRef}
               type="file"
-              accept="audio/*"
+              accept="audio/*,.mp3,.m4a,.wav,.ogg,.aac,.flac,.webm"
               className="hidden"
               onChange={onFileChange}
             />
