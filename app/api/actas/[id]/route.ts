@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { and, eq } from 'drizzle-orm';
 import { createClient } from '@/lib/supabase/server';
 import { db } from '@/lib/db';
-import { actas, users } from '@/lib/db/schema';
+import { getDbUser } from '@/lib/db/utils';
+import { actas } from '@/lib/db/schema';
 
 export async function GET(
   _request: NextRequest,
@@ -12,7 +13,7 @@ export async function GET(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
 
-  const [dbUser] = await db.select().from(users).where(eq(users.supabaseId, user.id));
+  const dbUser = await getDbUser(user.id);
   if (!dbUser) return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
 
   const { id } = await params;
@@ -30,7 +31,7 @@ export async function DELETE(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
 
-  const [dbUser] = await db.select().from(users).where(eq(users.supabaseId, user.id));
+  const dbUser = await getDbUser(user.id);
   if (!dbUser) return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
 
   const { id } = await params;

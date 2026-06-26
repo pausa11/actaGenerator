@@ -76,7 +76,8 @@ export default function DashboardPage() {
   async function eliminarGrupo(id: string) {
     setEliminando(id);
     try {
-      await fetch(`/api/groups/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/groups/${id}`, { method: 'DELETE' });
+      if (!res.ok) return;
       setGrupos((prev) => prev.filter((g) => g.id !== id));
     } finally {
       setEliminando(null);

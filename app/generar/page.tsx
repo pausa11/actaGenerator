@@ -56,10 +56,10 @@ function GenerarContent() {
 
   useEffect(() => {
     if (!groupId) return;
-    fetch('/api/groups').then(r => r.json()).then((grupos: { id: string; name: string }[]) => {
-      const g = grupos.find(g => g.id === groupId);
-      if (g) setNombreGrupo(g.name);
-    }).catch(() => {});
+    fetch(`/api/groups/${groupId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then((g: { name: string } | null) => { if (g) setNombreGrupo(g.name); })
+      .catch(() => {});
   }, [groupId]);
 
   useEffect(() => {

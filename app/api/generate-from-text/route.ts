@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+
+export const maxDuration = 300;
 import { createClient } from '@/lib/supabase/server';
 import { buildActaPromptDesdeTexto } from '@/lib/prompts';
 import { db } from '@/lib/db';
-import { groups, users } from '@/lib/db/schema';
+import { getDbUser } from '@/lib/db/utils';
+import { checkRateLimit } from '@/lib/rate-limit';
+import { groups } from '@/lib/db/schema';
 import { and, eq } from 'drizzle-orm';
 
 export async function POST(request: NextRequest) {
@@ -11,6 +15,15 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
+  }
+
+  const rateLimit = await checkRateLimit(`generate-text:${user.id}`, 5, 10 * 60 * 1000);
+  if (!rateLimit.allowed) {
+    const retryAfterSecs = Math.ceil(rateLimit.retryAfterMs / 1000);
+    return NextResponse.json(
+      { error: 'Demasiadas solicitudes. Esperá unos minutos antes de intentar de nuevo.' },
+      { status: 429, headers: { 'Retry-After': String(retryAfterSecs) } },
+    );
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
@@ -27,7 +40,7 @@ export async function POST(request: NextRequest) {
 
     let groupContext: string | null = null;
     if (groupId) {
-      const [dbUser] = await db.select().from(users).where(eq(users.supabaseId, user.id));
+      const dbUser = await getDbUser(user.id);
       if (dbUser) {
         const [group] = await db
           .select({ context: groups.context })

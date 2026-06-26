@@ -2,16 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { and, eq, desc } from 'drizzle-orm';
 import { createClient } from '@/lib/supabase/server';
 import { db } from '@/lib/db';
-import { actas, groups, users } from '@/lib/db/schema';
-
-async function getOrCreateDbUser(supabaseUser: { id: string; email?: string; user_metadata?: { full_name?: string } }) {
-  const [existing] = await db.select().from(users).where(eq(users.supabaseId, supabaseUser.id));
-  if (existing) return existing;
-  const email = supabaseUser.email ?? `${supabaseUser.id}@unknown.local`;
-  const name = supabaseUser.user_metadata?.full_name ?? null;
-  const [created] = await db.insert(users).values({ supabaseId: supabaseUser.id, email, name }).returning();
-  return created;
-}
+import { getOrCreateDbUser } from '@/lib/db/utils';
+import { actas, groups } from '@/lib/db/schema';
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -19,16 +11,28 @@ export async function GET(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
 
   const dbUser = await getOrCreateDbUser(user);
-  const groupId = request.nextUrl.searchParams.get('groupId');
+  const { searchParams } = request.nextUrl;
+  const groupId = searchParams.get('groupId');
+  const limit = Math.min(Number(searchParams.get('limit') ?? 50), 100);
+  const offset = Math.max(Number(searchParams.get('offset') ?? 0), 0);
 
   const conditions = [eq(actas.userId, dbUser.id)];
   if (groupId) conditions.push(eq(actas.groupId, groupId));
 
   const result = await db
-    .select()
+    .select({
+      id: actas.id,
+      groupId: actas.groupId,
+      title: actas.title,
+      modelUsed: actas.modelUsed,
+      status: actas.status,
+      createdAt: actas.createdAt,
+    })
     .from(actas)
     .where(and(...conditions))
-    .orderBy(desc(actas.createdAt));
+    .orderBy(desc(actas.createdAt))
+    .limit(limit)
+    .offset(offset);
 
   return NextResponse.json(result);
 }

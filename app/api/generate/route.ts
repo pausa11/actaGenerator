@@ -8,7 +8,9 @@ import { randomUUID } from 'crypto';
 import { createClient } from '@/lib/supabase/server';
 import { buildActaPrompt } from '@/lib/prompts';
 import { db } from '@/lib/db';
-import { groups, users } from '@/lib/db/schema';
+import { getDbUser } from '@/lib/db/utils';
+import { checkRateLimit } from '@/lib/rate-limit';
+import { groups } from '@/lib/db/schema';
 import { and, eq } from 'drizzle-orm';
 
 export const maxDuration = 300;
@@ -18,6 +20,15 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
+  }
+
+  const rateLimit = await checkRateLimit(`generate:${user.id}`, 5, 10 * 60 * 1000);
+  if (!rateLimit.allowed) {
+    const retryAfterSecs = Math.ceil(rateLimit.retryAfterMs / 1000);
+    return NextResponse.json(
+      { error: 'Demasiadas solicitudes. Esperá unos minutos antes de intentar de nuevo.' },
+      { status: 429, headers: { 'Retry-After': String(retryAfterSecs) } },
+    );
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
@@ -43,7 +54,7 @@ export async function POST(request: NextRequest) {
 
     let groupContext: string | null = null;
     if (groupId) {
-      const [dbUser] = await db.select().from(users).where(eq(users.supabaseId, user.id));
+      const dbUser = await getDbUser(user.id);
       if (dbUser) {
         const [group] = await db
           .select({ context: groups.context })
@@ -74,13 +85,10 @@ export async function POST(request: NextRequest) {
     ];
 
     // Ordenados de mejor a peor calidad; todos soportan audio via Files API
-    // Solo modelos con cuota disponible en esta cuenta (excluye 0/0 como gemini-2.0-flash)
+    // Excluye gemini-2.0-flash (cuota 0/0 en esta cuenta)
     const MODELS = [
-      'gemini-3.5-flash',          // Generación 3.5 — mejor calidad disponible
-      'gemini-3.1-flash-lite',     // Generación 3.1 — estable, 500 RPD (mayor cuota diaria)
-      'gemini-3-flash-preview',    // Generación 3.0
-      'gemini-2.5-flash',          // Generación 2.5 — probado y estable
-      'gemini-2.5-flash-lite',     // Generación 2.5 lite — último recurso
+      'gemini-2.5-flash',          // Mejor calidad disponible — probado y estable
+      'gemini-2.5-flash-lite',     // Cuota más alta — último recurso
     ];
 
     const isRateLimit = (err: unknown) => {
@@ -140,7 +148,6 @@ export async function POST(request: NextRequest) {
       await fileManager.deleteFile(uploadedFileName).catch(() => {});
     }
     if (audioPath) {
-      const supabase = await createClient();
       await supabase.storage.from('audio-uploads').remove([audioPath]).catch(() => {});
     }
   }

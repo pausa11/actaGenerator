@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, pgEnum, index } from 'drizzle-orm/pg-core';
 import { users } from './users';
 import { groups } from './groups';
 
@@ -15,7 +15,11 @@ export const actas = pgTable('actas', {
   status: actaStatusEnum('status').default('draft').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (t) => [
+  index('actas_user_id_idx').on(t.userId),
+  index('actas_group_id_idx').on(t.groupId),
+  index('actas_user_id_created_at_idx').on(t.userId, t.createdAt),
+]);
 
 export type Acta = typeof actas.$inferSelect;
 export type NewActa = typeof actas.$inferInsert;

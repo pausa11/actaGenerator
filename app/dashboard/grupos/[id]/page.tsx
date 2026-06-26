@@ -7,14 +7,15 @@ import { ArrowLeft, Plus, Trash2, FileText, Clock, Settings2, X, Download, FileD
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
-type Acta = {
+type ActaListItem = {
   id: string;
   title: string;
-  content: string;
   modelUsed: string | null;
   status: 'draft' | 'final';
   createdAt: string;
 };
+
+type Acta = ActaListItem & { content: string };
 
 type Group = {
   id: string;
@@ -40,13 +41,14 @@ export default function GroupDetailPage() {
   const groupId = params.id as string;
 
   const [grupo, setGrupo] = useState<Group | null>(null);
-  const [actas, setActas] = useState<Acta[]>([]);
+  const [actas, setActas] = useState<ActaListItem[]>([]);
   const [cargando, setCargando] = useState(true);
   const [eliminando, setEliminando] = useState<string | null>(null);
   const [descargandoPDFId, setDescargandoPDFId] = useState<string | null>(null);
   const [descargandoPDFModal, setDescargandoPDFModal] = useState(false);
   const [incluirImagenesPDF, setIncluirImagenesPDF] = useState(true);
   const [actaDetalle, setActaDetalle] = useState<Acta | null>(null);
+  const [cargandoDetalle, setCargandoDetalle] = useState(false);
   const [mostrarContexto, setMostrarContexto] = useState(false);
   const [contextoEdit, setContextoEdit] = useState('');
   const [guardandoContexto, setGuardandoContexto] = useState(false);
@@ -85,31 +87,33 @@ export default function GroupDetailPage() {
   async function cargar() {
     setCargando(true);
     try {
-      const [gruposRes, actasRes] = await Promise.all([
-        fetch('/api/groups'),
+      const [grupoRes, actasRes] = await Promise.all([
+        fetch(`/api/groups/${groupId}`),
         fetch(`/api/actas?groupId=${groupId}`),
       ]);
-      if (gruposRes.ok) {
-        const grupos = await gruposRes.json();
-        const found = grupos.find((g: Group) => g.id === groupId);
-        if (!found) { router.replace('/dashboard'); return; }
-        setGrupo(found);
-      }
+      if (!grupoRes.ok) { router.replace('/dashboard'); return; }
+      setGrupo(await grupoRes.json());
       if (actasRes.ok) setActas(await actasRes.json());
     } finally {
       setCargando(false);
     }
   }
 
-  async function abrirDetalle(acta: Acta) {
-    setActaDetalle(acta);
+  async function abrirDetalle(item: ActaListItem) {
+    setActaDetalle(null);
+    setCargandoDetalle(true);
     setModalTab('contenido');
     setImagenes([]);
     setCargandoImagenes(true);
     try {
-      const res = await fetch(`/api/actas/${acta.id}/images`);
-      if (res.ok) setImagenes(await res.json());
+      const [actaRes, imgsRes] = await Promise.all([
+        fetch(`/api/actas/${item.id}`),
+        fetch(`/api/actas/${item.id}/images`),
+      ]);
+      if (actaRes.ok) setActaDetalle(await actaRes.json());
+      if (imgsRes.ok) setImagenes(await imgsRes.json());
     } finally {
+      setCargandoDetalle(false);
       setCargandoImagenes(false);
     }
   }
@@ -136,7 +140,8 @@ export default function GroupDetailPage() {
   async function eliminarActa(id: string) {
     setEliminando(id);
     try {
-      await fetch(`/api/actas/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/actas/${id}`, { method: 'DELETE' });
+      if (!res.ok) return;
       setActas((prev) => prev.filter((a) => a.id !== id));
       if (actaDetalle?.id === id) setActaDetalle(null);
     } finally {
@@ -193,6 +198,13 @@ export default function GroupDetailPage() {
     } finally {
       setEliminandoImagenId(null);
     }
+  }
+
+  async function fetchContent(id: string): Promise<string | null> {
+    const res = await fetch(`/api/actas/${id}`);
+    if (!res.ok) return null;
+    const data: Acta = await res.json();
+    return data.content;
   }
 
   function sanitizarNombre(titulo: string) {
@@ -388,14 +400,14 @@ export default function GroupDetailPage() {
                   Imgs
                 </label>
                 <button
-                  onClick={(e) => { e.stopPropagation(); descargarMd(acta.content, acta.title); }}
+                  onClick={async (e) => { e.stopPropagation(); const c = await fetchContent(acta.id); if (c) descargarMd(c, acta.title); }}
                   className="p-1.5 rounded-lg text-white/30 hover:text-blue-400 hover:bg-blue-500/10 transition-all"
                   title="Descargar .md"
                 >
                   <FileDown size={15} />
                 </button>
                 <button
-                  onClick={(e) => { e.stopPropagation(); descargarPDF(acta.content, acta.title, acta.id, incluirImagenesPDF ? undefined : []); }}
+                  onClick={async (e) => { e.stopPropagation(); const c = await fetchContent(acta.id); if (c) descargarPDF(c, acta.title, acta.id, incluirImagenesPDF ? undefined : []); }}
                   disabled={descargandoPDFId === acta.id}
                   className="p-1.5 rounded-lg text-white/30 hover:text-purple-400 hover:bg-purple-500/10 transition-all disabled:opacity-40"
                   title="Exportar PDF"
@@ -417,7 +429,7 @@ export default function GroupDetailPage() {
       )}
 
       {/* Modal detalle acta */}
-      {actaDetalle && (
+      {(actaDetalle || cargandoDetalle) && (
         <div
           ref={actaModalRef}
           className="fixed inset-0 z-[200] flex items-start justify-center bg-black/70 backdrop-blur-sm px-4 py-8 overflow-y-auto"
@@ -425,9 +437,11 @@ export default function GroupDetailPage() {
           <div className="w-full max-w-3xl bg-[#0f0a1e] border border-white/15 rounded-2xl shadow-2xl">
             {/* Header del modal */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-              <h2 className="text-base font-semibold text-white truncate pr-4">{actaDetalle.title}</h2>
+              <h2 className="text-base font-semibold text-white truncate pr-4">
+                {actaDetalle?.title ?? '…'}
+              </h2>
               <div className="flex items-center gap-4 flex-shrink-0">
-                {modalTab === 'contenido' && (
+                {modalTab === 'contenido' && actaDetalle && (
                   <>
                     <button
                       onClick={() => descargarMd(actaDetalle.content, actaDetalle.title)}
@@ -454,7 +468,7 @@ export default function GroupDetailPage() {
                   </>
                 )}
                 <button
-                  onClick={() => setActaDetalle(null)}
+                  onClick={() => { setActaDetalle(null); setCargandoDetalle(false); }}
                   className="text-white/40 hover:text-white/70 transition-colors"
                 >
                   <X size={18} />
@@ -496,9 +510,15 @@ export default function GroupDetailPage() {
             {/* Contenido del tab */}
             {modalTab === 'contenido' ? (
               <div className="p-6">
-                <article className="bg-white rounded-xl p-8 prose prose-gray max-w-none">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{actaDetalle.content}</ReactMarkdown>
-                </article>
+                {cargandoDetalle || !actaDetalle ? (
+                  <div className="flex items-center justify-center py-24">
+                    <div className="w-6 h-6 border-2 border-purple-500/30 border-t-purple-400 rounded-full animate-spin" />
+                  </div>
+                ) : (
+                  <article className="bg-white rounded-xl p-8 prose prose-gray max-w-none">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{actaDetalle.content}</ReactMarkdown>
+                  </article>
+                )}
               </div>
             ) : (
               <div className="p-6">

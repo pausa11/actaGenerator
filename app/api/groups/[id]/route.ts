@@ -2,7 +2,30 @@ import { NextRequest, NextResponse } from 'next/server';
 import { and, eq, sql } from 'drizzle-orm';
 import { createClient } from '@/lib/supabase/server';
 import { db } from '@/lib/db';
-import { groups, users } from '@/lib/db/schema';
+import { getDbUser } from '@/lib/db/utils';
+import { groups } from '@/lib/db/schema';
+
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
+
+  const dbUser = await getDbUser(user.id);
+  if (!dbUser) return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
+
+  const { id } = await params;
+  const [group] = await db
+    .select()
+    .from(groups)
+    .where(and(eq(groups.id, id), eq(groups.userId, dbUser.id)));
+
+  if (!group) return NextResponse.json({ error: 'Grupo no encontrado' }, { status: 404 });
+
+  return NextResponse.json(group);
+}
 
 export async function PATCH(
   request: NextRequest,
@@ -12,9 +35,8 @@ export async function PATCH(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
 
-  const [existing] = await db.select().from(users).where(eq(users.supabaseId, user.id));
-  if (!existing) return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
-  const dbUser = existing;
+  const dbUser = await getDbUser(user.id);
+  if (!dbUser) return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
 
   const { id } = await params;
   const body = await request.json();
@@ -43,9 +65,8 @@ export async function DELETE(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
 
-  const [existing] = await db.select().from(users).where(eq(users.supabaseId, user.id));
-  if (!existing) return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
-  const dbUser = existing;
+  const dbUser = await getDbUser(user.id);
+  if (!dbUser) return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
 
   const { id } = await params;
 
