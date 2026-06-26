@@ -29,7 +29,7 @@ const itemsBase = [
     ],
   },
   {
-    label: 'Inicio',
+    label: 'Información',
     bgColor: '#1e293b',
     textColor: '#cbd5e1',
     links: [
@@ -86,27 +86,29 @@ export default function Navbar() {
 
   const logoNode = (
     <span style={{ fontSize: '1rem', letterSpacing: '-0.3px', lineHeight: 1 }}>
-      <strong style={{ color: '#ffffff', fontWeight: 700 }}>Acta</strong>
+      <strong style={{ color: '#ffffff', fontWeight: 700 }}>Acta </strong>
       <span style={{ background: 'linear-gradient(to right, #a78bfa, #f0abfc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Pro</span>
     </span>
   );
 
   return (
     <div className="navbar-wrapper">
-      {sesionActiva && nombreUsuario && (
-        <span className="navbar-external-greeting">
-          Hola, <strong>{nombreUsuario}</strong>
-        </span>
-      )}
-      <Link href="/" className="navbar-external-logo" aria-label="Ir al inicio">
-        <Image
-          src="/actaProLogo.png"
-          alt="Acta Pro"
-          width={80}
-          height={32}
-          priority
-        />
-      </Link>
+      <div className="navbar-left-group">
+        <Link href="/" className="navbar-external-logo" aria-label="Ir al inicio">
+          <Image
+            src="/actaProLogo.png"
+            alt="Acta Pro"
+            width={80}
+            height={32}
+            priority
+          />
+        </Link>
+        {sesionActiva && nombreUsuario && (
+          <span className="navbar-external-greeting">
+            Hola, <strong>{nombreUsuario}</strong>
+          </span>
+        )}
+      </div>
       <CardNav
         logoNode={logoNode}
         logoAlt="Acta Pro"

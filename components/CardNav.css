@@ -204,16 +204,23 @@
   width: 100%;
 }
 
-.navbar-external-greeting {
+.navbar-left-group {
   position: absolute;
-  left: 2rem;
+  left: 1rem;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 0.8rem;
+  z-index: 98;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.navbar-external-greeting {
+  font-size: 0.75rem;
   font-weight: 400;
   color: rgba(255, 255, 255, 0.7);
   white-space: nowrap;
-  z-index: 98;
   pointer-events: none;
 }
 
@@ -223,11 +230,6 @@
 }
 
 .navbar-external-logo {
-  position: absolute;
-  right: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 98;
   object-fit: contain;
   display: flex;
   align-items: center;
