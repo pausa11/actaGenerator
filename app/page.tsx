@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Mic, Zap, FileDown } from 'lucide-react';
+import { Mic, Zap, FileDown, FolderOpen, ImageIcon, ClipboardPaste, SlidersHorizontal } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import SplitText from '@/components/SplitText';
@@ -10,23 +10,54 @@ const pasos = [
   {
     Icono: Mic,
     numero: '01',
-    titulo: 'Graba el audio',
+    titulo: 'Ingresa tu reunión',
     descripcion:
-      'Usa cualquier grabadora o app de voz en tu teléfono o computadora. Sin equipos especiales ni preparación.',
+      'Sube el audio, pega una transcripción o adjuntá un archivo de texto. La IA entiende cualquier formato.',
   },
   {
     Icono: Zap,
     numero: '02',
     titulo: 'La IA lo procesa',
     descripcion:
-      'Sube el archivo y nuestra IA transcribe, analiza y estructura toda la reunión en segundos.',
+      'Nuestra IA transcribe, analiza y estructura toda la reunión en segundos, con el contexto de tu grupo.',
   },
   {
     Icono: FileDown,
     numero: '03',
-    titulo: 'Descarga el acta',
+    titulo: 'Descargá el acta',
     descripcion:
       'Obtienes un PDF profesional, listo para revisar, firmar y archivar. Sin editar una sola línea.',
+  },
+];
+
+const features = [
+  {
+    Icono: FolderOpen,
+    titulo: 'Grupos para organizar tus actas',
+    descripcion:
+      'Crea grupos por proyecto, equipo o cliente. Todas las actas de cada grupo quedan centralizadas y ordenadas en un solo lugar.',
+    tag: 'Dashboard',
+  },
+  {
+    Icono: ImageIcon,
+    titulo: 'Adjunta imágenes a cada acta',
+    descripcion:
+      'Fotografías de pizarras, capturas de pantalla, diagramas. Puedes adjuntar imágenes que quedan guardadas junto al acta.',
+    tag: 'Nuevo',
+  },
+  {
+    Icono: ClipboardPaste,
+    titulo: 'Transcripción o archivo de texto',
+    descripcion:
+      'No solo audio: pega directamente una transcripción de Zoom o Teams, o sube un archivo .txt y generamos el acta igual.',
+    tag: 'Múltiples formatos',
+  },
+  {
+    Icono: SlidersHorizontal,
+    titulo: 'Contexto personalizado por grupo',
+    descripcion:
+      'Configura un contexto específico para cada grupo (industria, participantes habituales, formato esperado) y el acta sale más precisa desde el primer borrador.',
+    tag: 'Pro',
   },
 ];
 
@@ -103,7 +134,7 @@ export default function Landing() {
         </h1>
 
         <p className="mt-6 text-xl text-white/60 max-w-2xl">
-          Solo graba el audio. En segundos tenés tu acta en PDF, estructurada y lista para firmar.
+          Sube el audio, pega una transcripción o adjunta un archivo. En segundos tienes tu acta en PDF, estructurada y lista para firmar.
         </p>
 
         <Link
@@ -113,8 +144,7 @@ export default function Landing() {
           Generar mi primera acta
           <span aria-hidden>→</span>
         </Link>
-
-        <p className="mt-4 text-white/30 text-sm">Sin registro requerido para empezar.</p>
+        
       </section>
 
       {/* ── Cómo funciona ── */}
@@ -138,6 +168,40 @@ export default function Landing() {
               </div>
               <h3 className="text-white font-semibold text-lg mb-2">{titulo}</h3>
               <p className="text-white/50 text-sm leading-relaxed">{descripcion}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Nuevas funcionalidades ── */}
+      <section className="px-6 py-16 max-w-5xl mx-auto">
+        <div className="text-center mb-3">
+          <SplitText tag="h2" text="Todo lo que necesitas en un solo lugar" className="text-3xl font-bold text-white" textAlign="center" />
+        </div>
+        <p className="text-white/50 text-center mb-12">
+          Acta Pro va más allá del audio. Organiza, contextualiza y documenta como nunca antes.
+        </p>
+
+        <div className="grid md:grid-cols-2 gap-6">
+          {features.map(({ Icono, titulo, descripcion, tag }) => (
+            <div
+              key={titulo}
+              className="relative p-6 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 hover:border-purple-400/30 transition-colors group"
+            >
+              <div className="flex items-start gap-4">
+                <div className="w-11 h-11 rounded-xl bg-purple-600/20 border border-purple-400/20 flex items-center justify-center shrink-0 group-hover:bg-purple-600/30 transition-colors">
+                  <Icono size={20} className="text-purple-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <h3 className="text-white font-semibold text-base">{titulo}</h3>
+                    <span className="shrink-0 px-2 py-0.5 rounded-full bg-purple-500/20 border border-purple-400/25 text-purple-300 text-xs font-medium">
+                      {tag}
+                    </span>
+                  </div>
+                  <p className="text-white/50 text-sm leading-relaxed">{descripcion}</p>
+                </div>
+              </div>
             </div>
           ))}
         </div>
