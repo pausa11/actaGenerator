@@ -222,6 +222,23 @@
   font-weight: 600;
 }
 
+.navbar-external-logo {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 98;
+  object-fit: contain;
+  display: flex;
+  align-items: center;
+  opacity: 0.9;
+  transition: opacity 0.2s ease;
+}
+
+.navbar-external-logo:hover {
+  opacity: 1;
+}
+
 @media (max-width: 768px) {
   .card-nav-container {
     width: calc(100% - 3rem);

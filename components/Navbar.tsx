@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { GoHome } from 'react-icons/go';
 import { createClient } from '@/lib/supabase/client';
 import CardNav from './CardNav';
@@ -97,6 +98,15 @@ export default function Navbar() {
           Hola, <strong>{nombreUsuario}</strong>
         </span>
       )}
+      <Link href="/" className="navbar-external-logo" aria-label="Ir al inicio">
+        <Image
+          src="/actaProLogo.png"
+          alt="Acta Pro"
+          width={80}
+          height={32}
+          priority
+        />
+      </Link>
       <CardNav
         logoNode={logoNode}
         logoAlt="Acta Pro"
