@@ -3,12 +3,14 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { GoArrowUpRight } from 'react-icons/go';
+import Image from 'next/image';
 import './CardNav.css';
 
 interface NavLink {
   label: string;
-  href: string;
+  href?: string;
   ariaLabel?: string;
+  action?: () => void;
 }
 
 interface NavItem {
@@ -20,6 +22,9 @@ interface NavItem {
 
 interface CardNavProps {
   logoText?: string;
+  logoSrc?: string;
+  logoAlt?: string;
+  logoNode?: React.ReactNode;
   greeting?: string;
   items?: NavItem[];
   className?: string;
@@ -30,10 +35,14 @@ interface CardNavProps {
   buttonTextColor?: string;
   buttonLabel?: string;
   onButtonClick?: () => void;
+  topRightNode?: React.ReactNode;
 }
 
 const CardNav = ({
   logoText,
+  logoSrc,
+  logoAlt = 'Acta Pro',
+  logoNode,
   greeting,
   items,
   className = '',
@@ -44,6 +53,7 @@ const CardNav = ({
   buttonTextColor,
   buttonLabel = 'Get Started',
   onButtonClick,
+  topRightNode,
 }: CardNavProps) => {
   const [isHamburgerOpen, setIsHamburgerOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -155,7 +165,7 @@ const CardNav = ({
   return (
     <div className={`card-nav-container ${className}`}>
       <nav ref={navRef} className={`card-nav ${isExpanded ? 'open' : ''}`} style={{ backgroundColor: baseColor }}>
-        <div className="card-nav-top">
+        <div className="card-nav-top py-2 px-4 md:p-2">
           <div
             className={`hamburger-menu ${isHamburgerOpen ? 'open' : ''}`}
             onClick={toggleMenu}
@@ -168,14 +178,21 @@ const CardNav = ({
             <div className="hamburger-line" />
           </div>
 
-          {logoText && (
+          {(logoNode || logoSrc || logoText) && (
             <div className="logo-container">
-              <span className="logo-text">{logoText}</span>
+              {logoNode ? (
+                logoNode
+              ) : logoSrc ? (
+                <Image src={logoSrc} alt={logoAlt} height={32} width={32} className="logo-img" />
+              ) : (
+                <span className="logo-text">{logoText}</span>
+              )}
             </div>
           )}
 
           <div className="card-nav-right">
-            {onButtonClick && (
+            {topRightNode}
+            {!topRightNode && onButtonClick && (
               <button
                 type="button"
                 className="card-nav-cta-button"
@@ -198,12 +215,19 @@ const CardNav = ({
             >
               <div className="nav-card-label">{item.label}</div>
               <div className="nav-card-links">
-                {item.links?.map((lnk, i) => (
-                  <a key={`${lnk.label}-${i}`} className="nav-card-link" href={lnk.href} aria-label={lnk.ariaLabel}>
-                    <GoArrowUpRight className="nav-card-link-icon" aria-hidden="true" />
-                    {lnk.label}
-                  </a>
-                ))}
+                {item.links?.map((lnk, i) =>
+                  lnk.action ? (
+                    <button key={`${lnk.label}-${i}`} className="nav-card-link nav-card-link-btn" onClick={lnk.action} aria-label={lnk.ariaLabel}>
+                      <GoArrowUpRight className="nav-card-link-icon" aria-hidden="true" />
+                      {lnk.label}
+                    </button>
+                  ) : (
+                    <a key={`${lnk.label}-${i}`} className="nav-card-link" href={lnk.href} aria-label={lnk.ariaLabel}>
+                      <GoArrowUpRight className="nav-card-link-icon" aria-hidden="true" />
+                      {lnk.label}
+                    </a>
+                  )
+                )}
               </div>
             </div>
           ))}

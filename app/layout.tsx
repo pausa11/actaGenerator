@@ -7,8 +7,12 @@ import Navbar from "@/components/Navbar";
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
-  title: 'Acta Generator',
+  title: 'Acta Pro',
   description: 'Genera actas de reunión a partir de audio',
+  icons: {
+    icon: '/actaProLogo.png',
+    apple: '/actaProLogo.png',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { GoHome } from 'react-icons/go';
 import { createClient } from '@/lib/supabase/client';
 import CardNav from './CardNav';
 import './CardNav.css';
 
-const items = [
+const itemsBase = [
   {
     label: 'Generar',
     bgColor: '#1e1b4b',
@@ -68,6 +70,26 @@ export default function Navbar() {
     router.refresh();
   };
 
+  const sesionItem = {
+    label: 'Cuenta',
+    bgColor: '#18181b',
+    textColor: '#e4e4e7',
+    links: [
+      { label: 'Cerrar sesión', action: cerrarSesion, ariaLabel: 'Cerrar sesión' },
+    ],
+  };
+
+  const itemsActivos = sesionActiva
+    ? [...itemsBase.filter(i => i.label !== 'Acceso'), sesionItem]
+    : itemsBase;
+
+  const logoNode = (
+    <span style={{ fontSize: '1rem', letterSpacing: '-0.3px', lineHeight: 1 }}>
+      <strong style={{ color: '#ffffff', fontWeight: 700 }}>Acta</strong>
+      <span style={{ background: 'linear-gradient(to right, #a78bfa, #f0abfc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Pro</span>
+    </span>
+  );
+
   return (
     <div className="navbar-wrapper">
       {sesionActiva && nombreUsuario && (
@@ -76,14 +98,18 @@ export default function Navbar() {
         </span>
       )}
       <CardNav
-        logoText="Acta Generator"
-        items={items}
+        logoNode={logoNode}
+        logoAlt="Acta Pro"
+        items={itemsActivos}
         baseColor="rgba(255,255,255,0.18)"
         menuColor="#ffffff"
-        buttonBgColor={sesionActiva ? '#7c3aed' : undefined}
-        buttonTextColor={sesionActiva ? '#ffffff' : undefined}
-        buttonLabel={sesionActiva ? 'Cerrar sesión' : undefined}
-        onButtonClick={sesionActiva ? cerrarSesion : undefined}
+        topRightNode={
+          sesionActiva ? (
+            <Link href="/dashboard" aria-label="Ir al dashboard">
+              <GoHome size={24} color="#ffffff" />
+            </Link>
+          ) : undefined
+        }
       />
     </div>
   );

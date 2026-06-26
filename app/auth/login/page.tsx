@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import SplitText from '@/components/SplitText';
 
@@ -33,6 +34,13 @@ export default function LoginPage() {
   return (
     <div className="flex-1 flex items-start justify-center px-4 pt-32">
       <div className="w-full max-w-sm bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-8 shadow-lg">
+        <div className="flex flex-col items-center mb-6 gap-2">
+          <Image src="/actaProLogo_white.png" alt="Acta Pro" width={56} height={56} />
+          <span className="text-2xl tracking-tight">
+            <strong className="font-bold text-white">Acta</strong>
+            <span style={{ background: 'linear-gradient(to right, #a78bfa, #f0abfc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Pro</span>
+          </span>
+        </div>
         <SplitText tag="h1" text="Iniciar sesión" className="text-2xl font-bold text-white mb-1" />
         <p className="text-sm text-white/60 mb-6">Accede a tu cuenta para generar actas.</p>
 
