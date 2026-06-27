@@ -33,7 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className="sticky top-0 z-50">
           <Navbar />
         </div>
-        <main className="relative z-10 flex-1">
+        <main className="relative flex-1">
           {children}
         </main>
       </body>
