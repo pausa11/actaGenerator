@@ -247,12 +247,19 @@ function GenerarContent() {
               onChange={onFileChange}
             />
             {archivo ? (
-              <div>
-                <Mic className="mx-auto mb-2 text-white/70" size={28} />
-                <p className="font-medium text-white">{archivo.name}</p>
-                <p className="text-sm text-white/70 mt-1">
-                  {(archivo.size / 1024 / 1024).toFixed(1)} MB — haz clic para cambiar
-                </p>
+              <div className="flex flex-col items-center gap-3">
+                <div className="relative">
+                  <Mic className="text-green-400" size={32} />
+                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-green-500 text-white text-[9px] font-bold">✓</span>
+                </div>
+                <div>
+                  <p className="font-semibold text-white">{archivo.name}</p>
+                  <p className="text-sm text-white/60 mt-0.5">{(archivo.size / 1024 / 1024).toFixed(1)} MB</p>
+                </div>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-xs text-white/80 font-medium transition-colors">
+                  <FolderOpen size={12} />
+                  Cambiar audio
+                </span>
               </div>
             ) : (
               <div>
@@ -318,12 +325,19 @@ function GenerarContent() {
                   onChange={onFileTextoChange}
                 />
                 {archivoTexto ? (
-                  <div>
-                    <FileText className="mx-auto mb-2 text-white/70" size={28} />
-                    <p className="font-medium text-white">{archivoTexto.name}</p>
-                    <p className="text-sm text-white/70 mt-1">
-                      {(archivoTexto.size / 1024).toFixed(1)} KB — haz clic para cambiar
-                    </p>
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="relative">
+                      <FileText className="text-green-400" size={32} />
+                      <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-green-500 text-white text-[9px] font-bold">✓</span>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-white">{archivoTexto.name}</p>
+                      <p className="text-sm text-white/60 mt-0.5">{(archivoTexto.size / 1024).toFixed(1)} KB</p>
+                    </div>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-xs text-white/80 font-medium transition-colors">
+                      <FolderOpen size={12} />
+                      Cambiar archivo
+                    </span>
                   </div>
                 ) : (
                   <div>
@@ -377,9 +391,9 @@ function GenerarContent() {
         )}
 
         {modo === 'audio' && (
-          <div className="mt-4 flex items-start gap-2 p-3 bg-amber-400/10 border border-amber-400/30 rounded-lg">
-            <span className="text-amber-400 text-sm mt-px">⚠</span>
-            <p className="text-xs text-amber-200/80">
+          <div className="mt-4 flex items-start gap-2 p-2 rounded">
+            <span className="text-white/30 text-xs mt-px">ⓘ</span>
+            <p className="text-xs text-white/30">
               La calidad del acta depende directamente de la calidad del audio. Grabaciones con ruido de fondo, voces superpuestas o baja claridad pueden afectar el resultado.
             </p>
           </div>
