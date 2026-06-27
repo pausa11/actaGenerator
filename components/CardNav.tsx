@@ -164,7 +164,8 @@ const CardNav = ({
 
   return (
     <div className={`card-nav-container ${className}`}>
-      <nav ref={navRef} className={`card-nav ${isExpanded ? 'open' : ''}`} style={{ backgroundColor: baseColor }}>
+      <nav ref={navRef} className={`card-nav ${isExpanded ? 'open' : ''}`} style={{ '--card-nav-bg': baseColor } as React.CSSProperties}>
+        <div className="card-nav-glass" aria-hidden="true" />
         <div className="card-nav-top py-2 px-4 md:p-2">
           <div
             className={`hamburger-menu ${isHamburgerOpen ? 'open' : ''}`}

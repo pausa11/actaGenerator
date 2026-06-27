@@ -113,7 +113,7 @@ export default function Navbar() {
         logoNode={logoNode}
         logoAlt="Acta Pro"
         items={itemsActivos}
-        baseColor="rgba(255,255,255,0.18)"
+        baseColor="rgba(15, 12, 35, 0.42)"
         menuColor="#ffffff"
         topRightNode={
           sesionActiva ? (
